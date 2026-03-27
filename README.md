@@ -193,8 +193,8 @@ npm start
 
 <ul>
   <li>👩‍💻 Pragati Bansal</li>
-  <li>👩‍💻 Ragini Sahu</li>
-  <li>👨‍💻 Prince Pandey</li>
+  <li>👩‍💻 Prince Pandey</li>
+  <li>👨‍💻 Ragini Sahu</li>
   <li>👨‍💻 Priyanshu Dhakre</li>
   <li>👩‍💻 Parwati Saraswat</li>
 </ul>
@@ -204,8 +204,13 @@ npm start
 <h2>⭐ Support</h2>
 
 <p>
-If you like this project:<br/>
-⭐ Star the repo<br/>
-🍴 Fork it<br/>
-🤝 Contribute
+If you like this project, consider supporting it:<br/><br/>
+
+⭐ Star this repository<br/>
+🍴 Fork and explore the code<br/>
+🤝 Contribute to enhance features<br/>
+💡 Suggest new ideas or improvements
+
+<br/><br/>
+Every contribution and feedback is highly appreciated ❤️
 </p>
