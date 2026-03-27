@@ -198,8 +198,8 @@ npm start
 
 <ul>
   <li>👩‍💻 Pragati Bansal</li>
-  <li>👩‍💻 Prince Pandey</li>
-  <li>👨‍💻 Ragini Sahu</li>
+  <li>👨‍💻 Prince Pandey</li>
+  <li>👩‍💻 Ragini Sahu</li>
   <li>👨‍💻 Priyanshu Dhakre</li>
   <li>👩‍💻 Parwati Saraswat</li>
 </ul>
