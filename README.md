@@ -1,4 +1,8 @@
-<h1 align="center">🚀 8.Vingo</h1>
+<h1 align="center">
+  <img src="./assets/vingo-logo.png" alt="Vingo Logo" width="60" />
+  <br/>
+  🚀 8. Vingo
+</h1>
 <h3 align="center">Food Delivery Web Application</h3>
 
 <p align="center">
