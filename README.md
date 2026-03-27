@@ -13,8 +13,8 @@
 <h2>📌 Overview</h2>
 
 <p>
-Vingo is a full-stack food delivery application built with a Node.js backend and React frontend. 
-It provides authentication, shop & item management, order processing, and real-time updates using Socket.io.
+Vingo is a full-stack food delivery application built with a Node.js backend and React frontend.
+It provides secure authentication, efficient shop & item management, smooth order processing, and real-time updates using Socket.io, ensuring a fast, reliable, and user-friendly experience.
 </p>
 
 ---
