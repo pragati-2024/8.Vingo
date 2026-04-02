@@ -13,6 +13,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: ["user/setSocket"],
         ignoredPaths: ["user.socket"],
+        
       },
     }),
 });

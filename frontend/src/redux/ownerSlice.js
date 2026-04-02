@@ -15,6 +15,7 @@ const ownerSlice=createSlice({
         },
         setActiveShop:(state,action)=>{
             state.activeShop = action.payload;
+            
         }
     }
 })
