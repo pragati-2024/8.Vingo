@@ -12,12 +12,18 @@ const userSlice = createSlice({
     cartItems: [],
     totalAmount: 0,
     myOrders: [],
+    loadingOrders: false,
     searchItems: null,
     socket: null
   },
   reducers: {
     setUserData: (state, action) => {
       state.userData = action.payload
+    },
+    setUserOnline: (state, action) => {
+      if (state.userData) {
+        state.userData.isOnline = action.payload
+      }
     },
     setCurrentCity: (state, action) => {
       state.currentCity = action.payload
@@ -73,6 +79,9 @@ const userSlice = createSlice({
     setMyOrders: (state, action) => {
       state.myOrders = action.payload
     },
+    setLoadingOrders: (state, action) => {
+      state.loadingOrders = action.payload
+    },
     addMyOrder: (state, action) => {
       state.myOrders = [action.payload, ...state.myOrders]
     }
@@ -89,12 +98,25 @@ const userSlice = createSlice({
     },
 
     updateRealtimeOrderStatus: (state, action) => {
-      const { orderId, shopId, status } = action.payload
-      const order = state.myOrders.find(o => o._id == orderId)
+      const { orderId, shopId, status, deliveryBoy } = action.payload
+      if (!Array.isArray(state.myOrders)) return
+
+      const order = state.myOrders.find(o => o._id?.toString() === orderId?.toString())
       if (order) {
-        const shopOrder = order.shopOrders.find(so => so.shop._id == shopId)
-        if (shopOrder) {
-          shopOrder.status = status
+        if (Array.isArray(order.shopOrders)) {
+          // User structure
+          const shopOrder = order.shopOrders.find(so => (so.shop?._id?.toString() || so.shop?.toString()) === shopId?.toString())
+          if (shopOrder) {
+            shopOrder.status = status
+            if (deliveryBoy) shopOrder.assignedDeliveryBoy = deliveryBoy
+          }
+        } else if (order.shopOrder) {
+          // Owner structure
+          const orderShopId = order.shopOrder.shop?._id?.toString() || order.shopOrder.shop?.toString()
+          if (orderShopId === shopId?.toString()) {
+            order.shopOrder.status = status
+            if (deliveryBoy) order.shopOrder.assignedDeliveryBoy = deliveryBoy
+          }
         }
       }
     },
@@ -105,6 +127,5 @@ const userSlice = createSlice({
   }
 })
 
-
-export const { setUserData, setCurrentAddress, setCurrentCity, setCurrentState, setShopsInMyCity, setItemsInMyCity, addToCart, updateQuantity, removeCartItem, setMyOrders, addMyOrder, updateOrderStatus, setSearchItems, setTotalAmount, setSocket ,updateRealtimeOrderStatus} = userSlice.actions
+export const { setUserData, setUserOnline, setCurrentAddress, setCurrentCity, setCurrentState, setShopsInMyCity, setItemsInMyCity, addToCart, updateQuantity, removeCartItem, setMyOrders, setLoadingOrders, addMyOrder, updateOrderStatus, setSearchItems, setTotalAmount, setSocket ,updateRealtimeOrderStatus} = userSlice.actions
 export default userSlice.reducer
