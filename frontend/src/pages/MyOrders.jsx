@@ -8,61 +8,57 @@ import { setMyOrders, updateOrderStatus, updateRealtimeOrderStatus } from '../re
 
 
 function MyOrders() {
-  const { userData, myOrders,socket} = useSelector(state => state.user)
+  const { userData, myOrders, socket, loadingOrders } = useSelector(state => state.user)
   const { activeShop } = useSelector(state => state.owner)
   const navigate = useNavigate()
-  const dispatch=useDispatch()
+  const dispatch = useDispatch()
 
   const filteredOrders = (userData?.role === 'owner' && activeShop)
-    ? myOrders.filter(order => order.shopOrder?.shop?._id === activeShop._id)
-    : myOrders;
+    ? (Array.isArray(myOrders) ? myOrders.filter(order => {
+        const orderShopId = order.shopOrder?.shop?._id?.toString() || order.shopOrder?.shop?.toString();
+        const activeShopId = activeShop?._id?.toString() || activeShop?.id?.toString();
+        return orderShopId === activeShopId;
+      }) : [])
+    : (Array.isArray(myOrders) ? myOrders : []);
 
-  useEffect(()=>{
-socket?.on('newOrder',(data)=>{
-  // Check if the incoming order belongs to ANY of the owner's shops
-  // For simplicity, we just add it to the general list
-  if (Array.isArray(myOrders)) {
-    dispatch(setMyOrders([data,...myOrders]))
-  }
-})
+  useEffect(() => {
+    if (!socket) return;
 
-socket?.on('update-status',({orderId,shopId,status,userId})=>{
-if(userId==userData._id){
-  dispatch(updateRealtimeOrderStatus({orderId,shopId,status}))
-}
-})
+    const handleNewOrder = (data) => {
+      dispatch(addMyOrder(data))
+    }
 
-socket?.on('orderAccepted', ({ orderId, shopId, deliveryBoy }) => {
-  if (userData.role === 'owner') {
-    // Update the specific order in state with the assigned delivery boy
-    const updatedOrders = myOrders.map(order => {
-      if (order._id === orderId && order.shopOrder.shop._id === shopId) {
-        return {
-          ...order,
-          shopOrder: {
-            ...order.shopOrder,
-            assignedDeliveryBoy: deliveryBoy
-          }
-        }
+    socket.on('newOrder', handleNewOrder)
+
+    socket.on('update-status', ({ orderId, shopId, status, userId }) => {
+      if (userId == userData?._id) {
+        dispatch(updateRealtimeOrderStatus({ orderId, shopId, status }))
       }
-      return order
     })
-    dispatch(setMyOrders(updatedOrders))
+
+    socket.on('orderAccepted', ({ orderId, shopId, deliveryBoy }) => {
+      if (userData?.role === 'owner') {
+        dispatch(updateRealtimeOrderStatus({ orderId, shopId, status: 'accepted', deliveryBoy }))
+      }
+    })
+
+    return () => {
+      socket.off('newOrder', handleNewOrder)
+      socket.off('update-status')
+      socket.off('orderAccepted')
+    }
+  }, [socket, userData?._id, dispatch])
+
+  if (loadingOrders) {
+    return (
+      <div className='w-full min-h-screen flex items-center justify-center bg-[#fffcf8]'>
+        <div className='w-12 h-12 border-4 border-[#ff4d2d] border-t-transparent rounded-full animate-spin'></div>
+      </div>
+    )
   }
-})
 
-return ()=>{
-  socket?.off('newOrder')
-  socket?.off('update-status')
-  socket?.off('orderAccepted')
-}
-  },[socket, myOrders, userData._id, dispatch])
-
-
-
-  
   return (
-    <div className='w-full min-h-screen bg-transparent flex justify-center px-4'>
+    <div className='w-full min-h-screen bg-[#fffcf8] flex justify-center px-4'>
       <div className='w-full max-w-[800px] p-4 bg-white/95 backdrop-blur-[2px] shadow-2xl rounded-3xl my-10 border border-gray-100/50 subtle-star-pattern'>
         <div className='p-6'>
           <div className='flex items-center gap-[20px] mb-8'>
@@ -72,23 +68,25 @@ return ()=>{
             <h1 className='text-3xl font-black text-gray-900 tracking-tighter uppercase'>My Orders</h1>
           </div>
           <div className='space-y-6'>
-            {filteredOrders?.length === 0 && (
+            {filteredOrders.length === 0 && (
               <div className='text-center py-20 bg-gray-50/50 rounded-3xl border border-dashed border-gray-200'>
-                <p className='text-gray-400 font-bold uppercase tracking-widest text-xs italic'>No orders found {userData.role === 'owner' ? `for ${activeShop?.name}` : ''} yet 😔</p>
-                <button onClick={()=>navigate("/")} className='mt-4 text-[#ff4d2d] font-black uppercase text-[10px] tracking-[0.2em] border-b border-[#ff4d2d] pb-0.5'>Start Ordering Now</button>
+                <p className='text-gray-400 font-bold uppercase tracking-widest text-xs italic'>No orders found {userData?.role === 'owner' ? `for ${activeShop?.name || 'your shop'}` : ''} yet 😔</p>
+                <button onClick={() => navigate("/")} className='mt-4 text-[#ff4d2d] font-black uppercase text-[10px] tracking-[0.2em] border-b border-[#ff4d2d] pb-0.5'>
+                  {userData?.role === 'owner' ? 'Wait for customers' : 'Start Ordering Now'}
+                </button>
               </div>
             )}
-            {filteredOrders?.map((order,index)=>(
-              userData.role=="user" ?
-              (
-                <UserOrderCard data={order} key={index}/>
-              )
-              :
-              userData.role=="owner"? (
-                <OwnerOrderCard data={order} key={index}/>
-              )
-              :
-              null
+            {filteredOrders.map((order, index) => (
+              userData?.role == "user" ?
+                (
+                  <UserOrderCard data={order} key={order._id || index} />
+                )
+                :
+                userData?.role == "owner" ? (
+                  <OwnerOrderCard data={order} key={order._id || index} />
+                )
+                  :
+                  null
             ))}
           </div>
         </div>
