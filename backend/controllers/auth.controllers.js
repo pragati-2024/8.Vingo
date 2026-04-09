@@ -3,6 +3,7 @@ import bcrypt, { hash } from "bcryptjs"
 import genToken from "../utils/token.js"
 import { sendOtpMail } from "../utils/mail.js"
 export const signUp=async (req,res) => {
+   
     try {
         const {fullName,email,password,mobile,role}=req.body
         let user=await User.findOne({email})
@@ -16,6 +17,7 @@ export const signUp=async (req,res) => {
             return res.status(400).json({message:"mobile no must be at least 10 digits."})
         }
      
+      
         const hashedPassword=await bcrypt.hash(password,10)
         user=await User.create({
             fullName,
@@ -35,12 +37,15 @@ export const signUp=async (req,res) => {
   
         return res.status(201).json(user)
 
-    } catch (error) {
+    } 
+    catch (error) {
         return res.status(500).json(`sign up error ${error}`)
     }
 }
 
 export const signIn=async (req,res) => {
+   
+    
     try {
         const {email,password}=req.body
         const user=await User.findOne({email})
@@ -49,7 +54,8 @@ export const signIn=async (req,res) => {
         }
         
      const isMatch=await bcrypt.compare(password,user.password)
-     if(!isMatch){
+    
+        if(!isMatch){
          return res.status(400).json({message:"incorrect Password"})
      }
 
@@ -63,12 +69,16 @@ export const signIn=async (req,res) => {
   
         return res.status(200).json(user)
 
-    } catch (error) {
+    }
+    
+    catch (error) {
         return res.status(500).json(`sign In error ${error}`)
     }
 }
 
 export const signOut=async (req,res) => {
+  
+    
     try {
         res.clearCookie("token")
 return res.status(200).json({message:"log out successfully"})
@@ -77,13 +87,16 @@ return res.status(200).json({message:"log out successfully"})
     }
 }
 
+
 export const sendOtp=async (req,res) => {
-  try {
+  
+    try {
     const {email}=req.body
     const user=await User.findOne({email})
     if(!user){
        return res.status(400).json({message:"User does not exist."})
     }
+        
     const otp=Math.floor(1000 + Math.random() * 9000).toString()
     user.resetOtp=otp
     user.otpExpires=Date.now()+5*60*1000
@@ -91,12 +104,14 @@ export const sendOtp=async (req,res) => {
     await user.save()
     await sendOtpMail(email,otp)
     return res.status(200).json({message:"otp sent successfully"})
-  } catch (error) {
+  } 
+    catch (error) {
      return res.status(500).json(`send otp error ${error}`)
   }  
 }
 
 export const verifyOtp=async (req,res) => {
+  
     try {
         const {email,otp}=req.body
         const user=await User.findOne({email})
@@ -108,7 +123,8 @@ export const verifyOtp=async (req,res) => {
         user.otpExpires=undefined
         await user.save()
         return res.status(200).json({message:"otp verify successfully"})
-    } catch (error) {
+    } 
+    catch (error) {
          return res.status(500).json(`verify otp error ${error}`)
     }
 }
@@ -131,6 +147,7 @@ export const resetPassword=async (req,res) => {
 }
 
 export const googleAuth=async (req,res) => {
+   
     try {
         const {fullName,email,mobile,role}=req.body
         let user=await User.findOne({email})
@@ -151,7 +168,9 @@ export const googleAuth=async (req,res) => {
         return res.status(200).json(user)
 
 
-    } catch (error) {
+    } 
+    catch (error) {
          return res.status(500).json(`googleAuth error ${error}`)
     }
+    
 }
