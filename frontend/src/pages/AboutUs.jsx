@@ -12,6 +12,7 @@ const teams = [
     {
         id: 1,
         title: "Tech Team",
+        
         description: "The backbone of Vingo. Responsible for frontend, backend, database, and system performance.",
         icon: <FaCode className="text-2xl text-orange-500" />
     },

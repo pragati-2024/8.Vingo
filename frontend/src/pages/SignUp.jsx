@@ -12,6 +12,8 @@ import { ClipLoader } from "react-spinners"
 import { useDispatch } from 'react-redux';
 import { setUserData } from '../redux/userSlice';
 function SignUp() {
+
+    
     const primaryColor = "#ff4d2d";
     const hoverColor = "#e64323";
     const bgColor = "#fff9f6";

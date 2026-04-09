@@ -45,7 +45,8 @@ const teamContacts = [
     }
 ]
 
-// Mock AI Logic Mapping
+
+
 const getAiResponse = (userInput) => {
     const text = userInput.toLowerCase()
     if (text.includes('status') || text.includes('track')) {
