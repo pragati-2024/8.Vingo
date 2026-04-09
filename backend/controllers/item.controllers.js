@@ -3,12 +3,15 @@ import Shop from "../models/shop.model.js";
 import uploadOnCloudinary from "../utils/cloudinary.js";
 
 export const addItem = async (req, res) => {
+  
   try {
     const { name, category, foodType, price, shopId } = req.body;
     let image;
+    
     if (req.file) {
       image = await uploadOnCloudinary(req.file.path);
     }
+    
 
     // Find specific shop by ID if provided, else fallback to any shop owned by user
     let shop;
@@ -18,11 +21,13 @@ export const addItem = async (req, res) => {
       shop = await Shop.findOne({ owner: req.userId });
     }
 
+    
     if (!shop) {
       return res
         .status(400)
         .json({ message: "shop not found or access denied" });
     }
+    
     const item = await Item.create({
       name,
       category,
@@ -32,23 +37,28 @@ export const addItem = async (req, res) => {
       shop: shop._id,
     });
 
-    shop.items.push(item._id);
-    await shop.save();
+      shop.items.push(item._id);
+    
+      await shop.save();
 
     const populatedShop = await Shop.findById(shop._id)
       .populate("owner")
       .populate({
         path: "items",
         options: { sort: { updatedAt: -1 } },
+     
       });
 
     return res.status(201).json(populatedShop);
+    
   } catch (error) {
     return res.status(500).json({ message: `add item error ${error}` });
   }
+  
 };
 
 export const editItem = async (req, res) => {
+ 
   try {
     const itemId = req.params.itemId;
     const { name, category, foodType, price, shopId } = req.body;
@@ -56,8 +66,10 @@ export const editItem = async (req, res) => {
     if (req.file) {
       image = await uploadOnCloudinary(req.file.path);
     }
+    
     const item = await Item.findByIdAndUpdate(
       itemId,
+     
       {
         name,
         category,
@@ -65,24 +77,30 @@ export const editItem = async (req, res) => {
         price,
         image,
       },
+      
       { new: true },
     );
-
+    
     if (!item) {
       return res.status(400).json({ message: "item not found" });
     }
 
     const shop = await Shop.findById(shopId || item.shop).populate({
       path: "items",
+      
       options: { sort: { updatedAt: -1 } },
     });
+
+    
     return res.status(200).json(shop);
+
+    
   } catch (error) {
     return res.status(500).json({ message: `edit item error ${error}` });
   }
 };
-
 export const getItemById = async (req, res) => {
+ 
   try {
     const itemId = req.params.itemId;
     const item = await Item.findById(itemId);
@@ -93,9 +111,11 @@ export const getItemById = async (req, res) => {
   } catch (error) {
     return res.status(500).json({ message: `get item error ${error}` });
   }
+  
 };
 
 export const deleteItem = async (req, res) => {
+
   try {
     const itemId = req.params.itemId;
     const item = await Item.findByIdAndDelete(itemId);
@@ -105,33 +125,42 @@ export const deleteItem = async (req, res) => {
 
     // Find the shop this item belonged to
     const shop = await Shop.findById(item.shop);
+    
     if (shop) {
       shop.items = shop.items.filter(
         (i) => i.toString() !== item._id.toString(),
       );
+      
       await shop.save();
 
       const populatedShop = await Shop.findById(shop._id).populate({
         path: "items",
         options: { sort: { updatedAt: -1 } },
       });
+      
       return res.status(200).json(populatedShop);
+      
     }
+    
 
     return res
       .status(200)
       .json({ message: "Item deleted, but shop not found" });
-  } catch (error) {
+    
+  }
+  catch (error) {
     return res.status(500).json({ message: `delete item error ${error}` });
   }
 };
 
 export const getItemByCity = async (req, res) => {
+ 
   try {
     const { city } = req.params;
     if (!city) {
       return res.status(400).json({ message: "city is required" });
     }
+    
     const shops = await Shop.find({
       city: { $regex: new RegExp(`^${city}$`, "i") },
     }).populate("items");
@@ -148,6 +177,7 @@ export const getItemByCity = async (req, res) => {
 };
 
 export const getItemsByShop = async (req, res) => {
+  
   try {
     const { shopId } = req.params;
     const shop = await Shop.findById(shopId).populate("items");
@@ -158,7 +188,8 @@ export const getItemsByShop = async (req, res) => {
       shop,
       items: shop.items,
     });
-  } catch (error) {
+  } 
+  catch (error) {
     return res.status(500).json({ message: `get item by shop error ${error}` });
   }
 };
@@ -177,6 +208,7 @@ export const searchItems = async (req, res) => {
     if (!shops || shops.length === 0) {
       return res.status(200).json([]);
     }
+    
 
     const shopIds = shops.map((s) => s._id);
 
@@ -188,6 +220,7 @@ export const searchItems = async (req, res) => {
         { name: { $regex: query, $options: "i" } },
         { category: { $regex: query, $options: "i" } },
       ];
+      
     }
 
     const items = await Item.find(filter).populate("shop", "name image city");
@@ -199,6 +232,7 @@ export const searchItems = async (req, res) => {
 };
 
 export const rating = async (req, res) => {
+  
   try {
     const { itemId, rating } = req.body;
 
@@ -211,6 +245,7 @@ export const rating = async (req, res) => {
     }
 
     const item = await Item.findById(itemId);
+   
     if (!item) {
       return res.status(400).json({ message: "item not found" });
     }
@@ -226,4 +261,5 @@ export const rating = async (req, res) => {
   } catch (error) {
     return res.status(500).json({ message: `rating error ${error}` });
   }
+  
 };
