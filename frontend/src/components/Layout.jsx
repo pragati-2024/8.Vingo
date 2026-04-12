@@ -1,7 +1,7 @@
 import React from 'react'
 import Footer from './Footer'
 import Nav from './Nav'
-import AnimatedStarBackground from './AnimatedStarBackground.css'
+import AnimatedStarBackground from '../components/AnimatedStarBackground';
 
 const Layout = ({ children }) => {
   return (
