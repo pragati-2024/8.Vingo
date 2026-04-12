@@ -42,6 +42,9 @@ function Shop() {
           <img
             src={resolveMediaUrl(shop.image)}
             alt=""
+            loading="eager"
+            decoding="async"
+            fetchpriority="high"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-linear-to-b from-black/70 to-black/30 flex flex-col justify-center items-center text-center px-4">

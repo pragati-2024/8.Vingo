@@ -46,6 +46,8 @@ function OwnerItemCard({ data }) {
         <img
           src={resolveMediaUrl(data.image)}
           alt={data.name}
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
         <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-sm">

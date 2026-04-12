@@ -172,9 +172,12 @@ function UserDashboard() {
         {/* Background Image with Dark Overlay */}
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=2070"
+            src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=75&w=1600"
             className="w-full h-full object-cover"
             alt="Hero BG"
+            loading="eager"
+            decoding="async"
+            fetchpriority="high"
           />
           <div className="absolute inset-0 bg-linear-to-b from-black/80 via-black/40 to-[#f8f9fb]"></div>
         </div>
@@ -187,6 +190,8 @@ function UserDashboard() {
           src={scooterImg}
           className="absolute left-[10%] top-[20%] w-24 md:w-40 hidden lg:block drop-shadow-2xl animate-pulse"
           alt="decoration"
+          loading="lazy"
+          decoding="async"
         />
         <motion.img
           initial={{ opacity: 0, x: 50 }}
@@ -195,6 +200,8 @@ function UserDashboard() {
           src={homeImg}
           className="absolute right-[10%] bottom-[20%] w-24 md:w-40 hidden lg:block drop-shadow-2xl"
           alt="decoration"
+          loading="lazy"
+          decoding="async"
         />
 
         <div className="z-10 flex flex-col items-center text-center px-4 max-w-4xl">
@@ -208,6 +215,8 @@ function UserDashboard() {
               <img
                 src={scooterImg}
                 alt="Scooter"
+                loading="eager"
+                decoding="async"
                 className="w-12 md:w-20 drop-shadow-2xl"
               />
             </div>
@@ -380,6 +389,8 @@ function UserDashboard() {
                         src={resolveMediaUrl(shop.image)}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         alt={shop.name}
+                        loading="lazy"
+                        decoding="async"
                       />
                       <div className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-gray-800 shadow-sm">
                         ⏱ 25-30 mins
@@ -472,7 +483,13 @@ function UserDashboard() {
                 className="flex flex-col items-center text-center p-8 bg-[#f8f9fb] rounded-3xl border border-gray-100 shadow-sm group hover:shadow-2xl transition-all duration-500"
               >
                 <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform">
-                  <img src={shopImg} alt="Shop" className="w-14" />
+                  <img
+                    src={shopImg}
+                    alt="Shop"
+                    className="w-14"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
                 <h3 className="text-xl font-black text-gray-900 uppercase mb-2">
                   1. Select Restaurant
@@ -487,7 +504,13 @@ function UserDashboard() {
                 className="flex flex-col items-center text-center p-8 bg-[#f8f9fb] rounded-3xl border border-gray-100 shadow-sm group hover:shadow-2xl transition-all duration-500"
               >
                 <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform">
-                  <img src={homeImg} alt="Order" className="w-14" />
+                  <img
+                    src={homeImg}
+                    alt="Order"
+                    className="w-14"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
                 <h3 className="text-xl font-black text-gray-900 uppercase mb-2">
                   2. Place Order
@@ -502,7 +525,13 @@ function UserDashboard() {
                 className="flex flex-col items-center text-center p-8 bg-[#f8f9fb] rounded-3xl border border-gray-100 shadow-sm group hover:shadow-2xl transition-all duration-500"
               >
                 <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform">
-                  <img src={scooterImg} alt="Delivery" className="w-14" />
+                  <img
+                    src={scooterImg}
+                    alt="Delivery"
+                    className="w-14"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
                 <h3 className="text-xl font-black text-gray-900 uppercase mb-2">
                   3. Fast Delivery

@@ -11,7 +11,9 @@ function OwnerOrderCard({ data }) {
   const { socket } = useSelector((state) => state.user);
 
   const formatStatus = (status) => {
-    const s = String(status || "").trim().toLowerCase();
+    const s = String(status || "")
+      .trim()
+      .toLowerCase();
     if (!s) return "";
     if (s === "delivered") return "Completed";
     if (s === "out of delivery") return "Out for Delivery";
@@ -100,6 +102,8 @@ function OwnerOrderCard({ data }) {
                 "https://via.placeholder.com/150"
               }
               alt={item.name}
+              loading="lazy"
+              decoding="async"
               className="w-full h-20 object-cover rounded-md mb-2"
             />
             <p className="text-xs font-bold text-gray-800 truncate">

@@ -21,6 +21,8 @@ function CartItemCard({ data }) {
         <img
           src={resolveMediaUrl(data.image)}
           alt=""
+          loading="lazy"
+          decoding="async"
           className="w-20 h-20 object-cover rounded-lg border"
         />
         <div>

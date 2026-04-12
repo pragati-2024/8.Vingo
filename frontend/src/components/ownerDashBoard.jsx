@@ -44,9 +44,12 @@ function OwnerDashboard() {
         {/* Background Image with Dark Overlay */}
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&q=80&w=2070"
+            src="https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&q=75&w=1600"
             className="w-full h-full object-cover"
             alt="Vendor BG"
+            loading="eager"
+            decoding="async"
+            fetchpriority="high"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/60 to-[#f8f9fb]"></div>
         </div>
@@ -140,6 +143,8 @@ function OwnerDashboard() {
                       <img
                         src={resolveMediaUrl(shop.image)}
                         alt={shop.name}
+                        loading="lazy"
+                        decoding="async"
                         className="w-14 h-14 rounded-2xl object-cover shadow-md"
                       />
                       <div className="flex-1 min-w-0">
@@ -256,7 +261,8 @@ function OwnerDashboard() {
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {dedupedActiveShopItems && dedupedActiveShopItems.length > 0 ? (
+                    {dedupedActiveShopItems &&
+                    dedupedActiveShopItems.length > 0 ? (
                       dedupedActiveShopItems.map((item, index) => (
                         <OwnerItemCard key={item?._id || index} data={item} />
                       ))

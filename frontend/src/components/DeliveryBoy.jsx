@@ -201,8 +201,7 @@ function DeliveryBoy() {
         const next = Array.isArray(prev) ? prev : [];
         const incomingId = data?._id?.toString?.() ?? String(data?._id ?? "");
         const exists = next.some(
-          (o) =>
-            (o?._id?.toString?.() ?? String(o?._id ?? "")) === incomingId,
+          (o) => (o?._id?.toString?.() ?? String(o?._id ?? "")) === incomingId,
         );
         return exists ? next : [data, ...next];
       });
@@ -283,18 +282,17 @@ function DeliveryBoy() {
       setAssignedOrders((prev) => {
         const next = Array.isArray(prev) ? prev : [];
         const incomingId =
-          res.data.order?._id?.toString?.() ?? String(res.data.order?._id ?? "");
+          res.data.order?._id?.toString?.() ??
+          String(res.data.order?._id ?? "");
         const exists = next.some(
-          (o) =>
-            (o?._id?.toString?.() ?? String(o?._id ?? "")) === incomingId,
+          (o) => (o?._id?.toString?.() ?? String(o?._id ?? "")) === incomingId,
         );
         return exists ? next : [res.data.order, ...next];
       });
       const acceptedId = orderId?.toString?.() ?? String(orderId ?? "");
       setAvailableOrders((prev) =>
         prev.filter(
-          (a) =>
-            (a?._id?.toString?.() ?? String(a?._id ?? "")) !== acceptedId,
+          (a) => (a?._id?.toString?.() ?? String(a?._id ?? "")) !== acceptedId,
         ),
       );
       setMessage("Order accepted successfully!");
@@ -307,8 +305,7 @@ function DeliveryBoy() {
 
   const updateStatus = async (status) => {
     try {
-      const shopId =
-        activeShopOrder?.shop?._id || activeShopOrder?.shop;
+      const shopId = activeShopOrder?.shop?._id || activeShopOrder?.shop;
       if (!shopId) {
         setMessage("Missing shop info for this order");
         setTimeout(() => setMessage(""), 3000);
@@ -381,9 +378,7 @@ function DeliveryBoy() {
       fetchInitialData();
     } catch (e) {
       const msg =
-        e?.response?.data?.message ||
-        e?.message ||
-        "OTP verification failed";
+        e?.response?.data?.message || e?.message || "OTP verification failed";
       setMessage(msg);
       setTimeout(() => setMessage(""), 3000);
     }
@@ -400,6 +395,9 @@ function DeliveryBoy() {
           src="/delivery_bg.png"
           className="absolute inset-0 w-full h-full object-cover"
           alt="Delivery Background"
+          loading="eager"
+          decoding="async"
+          fetchpriority="high"
         />
         <div className="relative z-20 h-full max-w-7xl mx-auto px-4 flex flex-col items-center justify-center text-center">
           <motion.div
@@ -489,30 +487,33 @@ function DeliveryBoy() {
                       Active Mission
                     </h2>
                   </div>
-                  {Array.isArray(assignedOrders) && assignedOrders.length > 1 && (
-                    <select
-                      className="mr-4 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-black uppercase tracking-widest text-gray-700"
-                      value={currentOrder?._id || ""}
-                      onChange={(e) => {
-                        const nextId = e.target.value;
-                        const next = assignedOrders.find(
-                          (o) => String(o?._id) === String(nextId),
-                        );
-                        setCurrentOrder(next || null);
-                        setShowOtpBox(false);
-                        setOtp("");
-                        setShowCompleted(false);
-                      }}
-                    >
-                      {assignedOrders.map((o) => (
-                        <option key={o._id} value={o._id}>
-                          #{String(o._id).slice(-6)} — {o.user?.fullName || "Customer"}
-                        </option>
-                      ))}
-                    </select>
-                  )}
+                  {Array.isArray(assignedOrders) &&
+                    assignedOrders.length > 1 && (
+                      <select
+                        className="mr-4 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-black uppercase tracking-widest text-gray-700"
+                        value={currentOrder?._id || ""}
+                        onChange={(e) => {
+                          const nextId = e.target.value;
+                          const next = assignedOrders.find(
+                            (o) => String(o?._id) === String(nextId),
+                          );
+                          setCurrentOrder(next || null);
+                          setShowOtpBox(false);
+                          setOtp("");
+                          setShowCompleted(false);
+                        }}
+                      >
+                        {assignedOrders.map((o) => (
+                          <option key={o._id} value={o._id}>
+                            #{String(o._id).slice(-6)} —{" "}
+                            {o.user?.fullName || "Customer"}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   <div className="bg-[#ff4d2d]/10 text-[#ff4d2d] px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest">
-                    {showCompleted || currentOrder.shopOrders?.[0]?.status === "delivered"
+                    {showCompleted ||
+                    currentOrder.shopOrders?.[0]?.status === "delivered"
                       ? "Completed"
                       : "In Progress"}
                   </div>
@@ -598,15 +599,18 @@ function DeliveryBoy() {
                   </div>
 
                   <div className="mt-10 flex flex-col sm:flex-row gap-4">
-                    {!showCompleted && activeShopOrder?.status === "accepted" && (
-                      <button
-                        onClick={() => updateStatus("out of delivery")}
-                        className="flex-1 bg-gray-900 text-white py-6 rounded-4xl font-black text-lg uppercase tracking-widest shadow-2xl hover:bg-black transition-all flex items-center justify-center gap-3"
-                      >
-                        <MdDeliveryDining className="text-3xl" /> Start Delivery
-                      </button>
-                    )}
-                    {!showCompleted && activeShopOrder?.status === "out of delivery" &&
+                    {!showCompleted &&
+                      activeShopOrder?.status === "accepted" && (
+                        <button
+                          onClick={() => updateStatus("out of delivery")}
+                          className="flex-1 bg-gray-900 text-white py-6 rounded-4xl font-black text-lg uppercase tracking-widest shadow-2xl hover:bg-black transition-all flex items-center justify-center gap-3"
+                        >
+                          <MdDeliveryDining className="text-3xl" /> Start
+                          Delivery
+                        </button>
+                      )}
+                    {!showCompleted &&
+                      activeShopOrder?.status === "out of delivery" &&
                       !showOtpBox && (
                         <button
                           onClick={sendOtp}
@@ -643,7 +647,9 @@ function DeliveryBoy() {
                         <button
                           onClick={verifyOtp}
                           type="button"
-                          disabled={String(otp || "").replace(/\D/g, "").length !== 4}
+                          disabled={
+                            String(otp || "").replace(/\D/g, "").length !== 4
+                          }
                           className="bg-gray-900 text-white px-12 rounded-3xl font-black uppercase tracking-widest hover:bg-black transition-all"
                         >
                           Verify

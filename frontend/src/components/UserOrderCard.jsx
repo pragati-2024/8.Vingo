@@ -12,7 +12,9 @@ function UserOrderCard({ data }) {
   const [selectedRating, setSelectedRating] = useState({}); //itemId:rating
 
   const formatStatus = (status) => {
-    const s = String(status || "").trim().toLowerCase();
+    const s = String(status || "")
+      .trim()
+      .toLowerCase();
     if (!s) return "";
     if (s === "delivered") return "Completed";
     if (s === "out of delivery") return "Out for Delivery";
@@ -94,6 +96,8 @@ function UserOrderCard({ data }) {
                   <img
                     src={resolveMediaUrl(item.item.image)}
                     alt=""
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-24 object-cover rounded"
                   />
                 )}

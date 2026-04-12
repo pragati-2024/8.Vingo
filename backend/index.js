@@ -86,7 +86,14 @@ app.use(cors(corsOptions));
 
 // ================= STATIC ASSETS =================
 // Multer saves uploads into ./public and DB stores paths like /public/<file>.
-app.use("/public", express.static(path.join(__dirname, "public")));
+app.use(
+  "/public",
+  express.static(path.join(__dirname, "public"), {
+    // Uploaded filenames include timestamps, so it's safe to cache aggressively.
+    maxAge: "30d",
+    immutable: true,
+  }),
+);
 
 // If a referenced /public file is missing (e.g., old local uploads), serve a placeholder.
 // NOTE: Express 5 / path-to-regexp v6 does not accept a bare '/public/*' route.
