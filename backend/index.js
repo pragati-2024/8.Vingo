@@ -89,7 +89,9 @@ app.use(cors(corsOptions));
 app.use("/public", express.static(path.join(__dirname, "public")));
 
 // If a referenced /public file is missing (e.g., old local uploads), serve a placeholder.
-app.get("/public/*", (req, res) => {
+// NOTE: Express 5 / path-to-regexp v6 does not accept a bare '/public/*' route.
+// Using a mounted middleware avoids wildcard route parsing entirely.
+app.use("/public", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "placeholder-image10.avif"));
 });
 
