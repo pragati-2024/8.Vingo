@@ -4,7 +4,6 @@ import User from "../models/user.model.js"
 import { sendDeliveryOtpMail } from "../utils/mail.js"
 import RazorPay from "razorpay"
 import dotenv from "dotenv"
-
 dotenv.config()
 
 let instance = null;
@@ -12,15 +11,18 @@ if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
     instance = new RazorPay({
         key_id: process.env.RAZORPAY_KEY_ID,
         key_secret: process.env.RAZORPAY_KEY_SECRET,
-    });
+    }
+);
 }
 
 export const placeOrder = async (req, res) => {
     try {
         const { cartItems, paymentMethod, deliveryAddress, totalAmount } = req.body
+        
         if (!cartItems || cartItems.length === 0) {
             return res.status(400).json({ message: "Cart is empty" })
         }
+       
         if (!deliveryAddress.text || !deliveryAddress.latitude || !deliveryAddress.longitude) {
             return res.status(400).json({ message: "Please provide complete delivery address" })
         }
@@ -28,6 +30,7 @@ export const placeOrder = async (req, res) => {
         const groupItemsByShop = {}
         cartItems.forEach(item => {
             const shopId = item.shop
+           
             if (!groupItemsByShop[shopId]) {
                 groupItemsByShop[shopId] = []
             }
@@ -35,6 +38,7 @@ export const placeOrder = async (req, res) => {
         });
 
         const shopOrders = await Promise.all(Object.keys(groupItemsByShop).map(async (shopId) => {
+            
             const shop = await Shop.findById(shopId).populate("owner")
             if (!shop) {
                 throw new Error(`Shop with id ${shopId} not found`)
@@ -52,7 +56,8 @@ export const placeOrder = async (req, res) => {
                     name: i.name
                 }))
             }
-        }))
+        })
+     )
 
         let newOrder;
         if (paymentMethod === "online") {
@@ -63,7 +68,8 @@ export const placeOrder = async (req, res) => {
                     currency: 'INR',
                     receipt: `receipt_${Date.now()}`
                 })
-            } else {
+            } 
+            else {
                 razorOrder = {
                     id: `order_fake_${Date.now()}`,
                     amount: Math.round(totalAmount * 100),
@@ -86,6 +92,7 @@ export const placeOrder = async (req, res) => {
                 orderId: newOrder._id,
             })
         }
+        
 
         newOrder = await Order.create({
             user: req.userId,
@@ -100,10 +107,11 @@ export const placeOrder = async (req, res) => {
         await newOrder.populate("shopOrders.owner", "fullName socketId")
         await newOrder.populate("user", "fullName email mobile")
 
-        // 🔥 BROADCAST TO DELIVERY BOYS AND SHOP OWNERS
+
+        //  BROADCASTING TO DELIVERY BOYS AND SHOP OWNERS
         const io = req.app.get("io")
         if (io) {
-            // 🔥 Broadcast to each shop owner in the order
+            //  Broadcast to each shop owner in the order premises
             newOrder.shopOrders.forEach(shopOrder => {
                 const ownerId = shopOrder.owner._id.toString()
                 io.to(ownerId).emit('newOrder', {
@@ -116,7 +124,7 @@ export const placeOrder = async (req, res) => {
                     payment: newOrder.payment
                 })
             })
-            // 🔥 GLOBAL BROADCAST TO ALL DELIVERY BOYS
+            //  GLOBAL BROADCASTING TO ALL DELIVERY BOYS FOR PARTNERING PURPOSE
             io.emit('newOrder', newOrder)
         }
 
@@ -134,7 +142,7 @@ export const verifyPayment = async (req, res) => {
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId } = req.body
         if (!instance) {
-            // IF FAKE ORDER
+            // IF FAKE ORDER IS THERE
             const order = await Order.findById(orderId)
             order.payment = true
             order.razorpayPaymentId = razorpay_payment_id
@@ -162,7 +170,7 @@ export const verifyPayment = async (req, res) => {
 
         const io = req.app.get('io')
         if (io) {
-            // 🔥 BROADCAST TO SHOP OWNERS
+            //  BROADCASTING TO SHOP OWNERS
             order.shopOrders.forEach(shopOrder => {
                 const ownerId = shopOrder.owner._id.toString()
                 io.to(ownerId).emit('newOrder', {
@@ -176,7 +184,7 @@ export const verifyPayment = async (req, res) => {
                 })
             })
 
-            // 🔥 GLOBAL BROADCAST TO ALL DELIVERY BOYS
+            //  GLOBAL BROADCAST TO ALL DELIVERY BOYS
             io.emit('newOrder', order)
         }
 
@@ -221,7 +229,8 @@ export const acceptOrder = async (req, res) => {
         }
 
         res.status(200).json({ message: "Order accepted successfully", order: updatedOrder });
-    } catch (error) {
+    }
+    catch (error) {
         console.log(error);
         res.status(500).json({ message: "Internal server error" });
     }
@@ -275,7 +284,8 @@ export const updateOrderStatus = async (req, res) => {
             shopOrder: { ...shopOrder.toObject(), availableBoys },
             order
         });
-    } catch (error) {
+    } 
+    catch (error) {
         console.log(error);
         res.status(500).json({ message: "Internal server error" });
     }
@@ -320,13 +330,15 @@ export const manualAssign = async (req, res) => {
         }
 
         res.status(200).json({ message: "Delivery boy assigned successfully", order: updatedOrder });
-    } catch (error) {
+    } 
+    catch (error) {
         console.log(error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
 
 export const getMyOrders = async (req, res) => {
+  
     try {
         const user = await User.findById(req.userId)
         if (user.role === "user") {
@@ -338,7 +350,8 @@ export const getMyOrders = async (req, res) => {
                 .populate("deliveryBoy", "fullName mobile location")
 
             return res.status(200).json(orders)
-        } else if (user.role === "owner") {
+        }
+        else if (user.role === "owner") {
             const orders = await Order.find({ "shopOrders.owner": req.userId })
                 .sort({ createdAt: -1 })
                 .populate("shopOrders.shop", "name city state image")
@@ -364,7 +377,8 @@ export const getMyOrders = async (req, res) => {
             })
 
             return res.status(200).json(flattenedOrders)
-        } else if (user.role === "deliveryBoy") {
+        }
+        else if (user.role === "deliveryBoy") {
             const orders = await Order.find({ deliveryBoy: req.userId })
                 .sort({ createdAt: -1 })
                 .populate("shopOrders.shop", "name")
@@ -373,7 +387,8 @@ export const getMyOrders = async (req, res) => {
 
             return res.status(200).json(orders)
         }
-    } catch (error) {
+    } 
+    catch (error) {
         return res.status(500).json({ message: `Get orders error: ${error.message}` })
     }
 }
@@ -391,7 +406,8 @@ export const getAvailableOrders = async (req, res) => {
         .populate("shopOrders.shopOrderItems.item", "name price image")
 
         res.status(200).json(orders)
-    } catch (error) {
+    }
+    catch (error) {
         res.status(500).json({ message: "Internal server error" })
     }
 }
@@ -410,12 +426,14 @@ export const retryBroadcast = async (req, res) => {
             if (onlineDeliveryBoys.length > 0) {
                 io.emit("newOrder", order);
                 return res.status(200).json({ message: "Broadcast retried successfully" });
-            } else {
+            }
+            else {
                 return res.status(400).json({ message: "No delivery partners online" });
             }
         }
         res.status(500).json({ message: "Socket server not available" });
-    } catch (error) {
+    } 
+    catch (error) {
         console.log(error);
         res.status(500).json({ message: "Internal server error" });
     }
@@ -431,7 +449,8 @@ export const getOrderById = async (req, res) => {
 
         if (!order) return res.status(404).json({ message: "Order not found" })
         return res.status(200).json(order)
-    } catch (error) {
+    }
+    catch (error) {
         return res.status(500).json({ message: `Get order error: ${error.message}` })
     }
 }
@@ -451,7 +470,8 @@ export const sendDeliveryOtp = async (req, res) => {
 
         await sendDeliveryOtpMail(order.user.email, otp)
         return res.status(200).json({ message: `OTP sent successfully to ${order.user.fullName}` })
-    } catch (error) {
+    }
+    catch (error) {
         return res.status(500).json({ message: `Send OTP error: ${error.message}` })
     }
 }
@@ -472,7 +492,8 @@ export const verifyDeliveryOtp = async (req, res) => {
         await order.save()
 
         return res.status(200).json({ message: "Order delivered successfully" })
-    } catch (error) {
+    }
+    catch (error) {
         return res.status(500).json({ message: `Verify OTP error: ${error.message}` })
     }
 }
@@ -489,7 +510,8 @@ export const getTodayDeliveries = async (req, res) => {
         })
 
         return res.status(200).json(orders)
-    } catch (error) {
+    } 
+    catch (error) {
         return res.status(500).json({ message: `Get today deliveries error: ${error.message}` })
     }
 }
