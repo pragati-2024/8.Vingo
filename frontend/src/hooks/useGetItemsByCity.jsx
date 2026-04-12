@@ -1,43 +1,72 @@
-import axios from 'axios'
-import React, { useEffect, useState } from 'react'
-import { serverUrl } from '../App'
-import { useDispatch, useSelector } from 'react-redux'
-import { setItemsInMyCity } from '../redux/userSlice'
+import axios from "axios";
+import React, { useEffect } from "react";
+import { serverUrl } from "../config";
+import { useDispatch, useSelector } from "react-redux";
+import { setCurrentCity, setItemsInMyCity } from "../redux/userSlice";
 
 function useGetItemsByCity() {
-    const dispatch = useDispatch()
-    const { currentCity } = useSelector(state => state.user)
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState(null)
+  const dispatch = useDispatch();
+  const { currentCity } = useSelector((state) => state.user);
 
-    useEffect(() => {
-        // Fallback to "Mathura" if city is empty or invalid
-        const targetCity = currentCity?.trim().toLowerCase() || "mathura"
+  useEffect(() => {
+    // Fallback to "mathura" if city is empty
+    const targetCity = (currentCity || "").trim().toLowerCase() || "mathura";
+    let isActive = true;
+    const controller = new AbortController();
+    const debounceMs = 350;
 
-        const fetchItems = async () => {
-            setLoading(true)
-            setError(null)
+    let didFallback = false;
+
+    const fetchItems = async () => {
+      // Mark loading in store for screens that need a spinner
+      dispatch(setItemsInMyCity(null));
+      try {
+        const result = await axios.get(
+          `${serverUrl}/api/item/get-by-city/${targetCity}`,
+          { withCredentials: true, signal: controller.signal },
+        );
+        if (!isActive) return;
+        const items = Array.isArray(result.data) ? result.data : [];
+        dispatch(setItemsInMyCity(items));
+
+        // If geolocation auto-set a city that has no data, fallback once.
+        if (items.length === 0 && targetCity !== "mathura") {
+          let isAuto = false;
+          try {
+            isAuto = sessionStorage.getItem("vingo_city_auto") === "1";
+          } catch {
+            isAuto = false;
+          }
+
+          if (isAuto && !didFallback) {
+            didFallback = true;
             try {
-                const result = await axios.get(
-                    `${serverUrl}/api/item/get-by-city/${targetCity}`,
-                    { withCredentials: true }
-                )
-                dispatch(setItemsInMyCity(result.data))
-                console.log(`Fetched items for ${targetCity}:`, result.data)
-            } catch (error) {
-                console.error(`Error fetching items for ${targetCity}:`, error)
-                setError(error.message)
-                dispatch(setItemsInMyCity([])) // Prevent stale data
-            } finally {
-                setLoading(false)
+              sessionStorage.removeItem("vingo_city_auto");
+            } catch {
+              // ignore
             }
+            dispatch(setCurrentCity("mathura"));
+            return;
+          }
         }
+        if (import.meta.env.DEV) {
+          console.log(`Fetched items for ${targetCity}:`, items);
+        }
+      } catch (error) {
+        if (error?.name === "CanceledError") return;
+        if (!isActive) return;
+        console.error(`Error fetching items for ${targetCity}:`, error);
+        dispatch(setItemsInMyCity([]));
+      }
+    };
 
-        fetchItems()
-
-    }, [currentCity])
-
-    return { loading, error }
+    const t = setTimeout(fetchItems, debounceMs);
+    return () => {
+      isActive = false;
+      clearTimeout(t);
+      controller.abort();
+    };
+  }, [currentCity, dispatch]);
 }
 
-export default useGetItemsByCity
+export default useGetItemsByCity;
