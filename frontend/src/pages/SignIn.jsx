@@ -49,7 +49,6 @@ function SignIn() {
       try {
         if (result?.data?.token) {
           localStorage.setItem("vingo_token", result.data.token);
-          axios.defaults.headers.common.Authorization = `Bearer ${result.data.token}`;
         }
       } catch {
         // ignore
@@ -83,7 +82,6 @@ function SignIn() {
         try {
           if (data?.token) {
             localStorage.setItem("vingo_token", data.token);
-            axios.defaults.headers.common.Authorization = `Bearer ${data.token}`;
           }
         } catch {
           // ignore

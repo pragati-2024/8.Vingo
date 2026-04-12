@@ -28,41 +28,70 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ================= CORS CONFIG (FINAL) =================
-const allowedOrigins = new Set(
-  [
-    process.env.CLIENT_URL,
-    ...(process.env.CLIENT_URLS
-      ? process.env.CLIENT_URLS.split(",")
-      : []),
+// ================= CORS CONFIG =================
+const normalizeOrigin = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/\/+$/, "");
+
+const allowedOrigins = (() => {
+  const raw = [
+    process.env.CLIENT_URL, // single origin
+    process.env.CLIENT_URLS, // comma-separated
+    process.env.ALLOWED_ORIGINS, // comma-separated
   ]
     .filter(Boolean)
-    .map((o) => o.trim().replace(/\/+$/, ""))
-);
+    .join(",");
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // allow Postman / server-to-server
-      if (!origin) return callback(null, true);
+  const list = raw
+    .split(",")
+    .map((s) => normalizeOrigin(s))
+    .filter(Boolean);
 
-      const normalized = origin.trim().replace(/\/+$/, "");
+  return new Set(list);
+})();
 
-      // allow localhost automatically
-      if (/^http:\/\/localhost:\d+$/.test(normalized)) {
-        return callback(null, true);
-      }
+const allowVercelApp =
+  String(process.env.ALLOW_VERCEL_APP || "").toLowerCase() === "true";
 
-      // allow Vercel / production origins from env
-      if (allowedOrigins.has(normalized)) {
-        return callback(null, true);
-      }
+const corsOrigin = (origin, callback) => {
+  // allow non-browser clients (e.g. curl, Postman)
+  if (!origin) return callback(null, true);
 
-      return callback(new Error(`CORS blocked: ${normalized}`));
-    },
-    credentials: true,
-  })
-);
+  const normalized = normalizeOrigin(origin);
+
+  // allow localhost automatically
+  if (/^http:\/\/(localhost|127\.0\.0\.1):\d+$/i.test(normalized)) {
+    return callback(null, true);
+  }
+
+  if (allowedOrigins.has(normalized)) return callback(null, true);
+
+  if (
+    allowVercelApp &&
+    /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(normalized)
+  ) {
+    return callback(null, true);
+  }
+
+  return callback(new Error(`Not allowed by CORS: ${normalized}`));
+};
+
+const corsOptions = {
+  origin: corsOrigin,
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+
+// ================= STATIC ASSETS =================
+// Multer saves uploads into ./public and DB stores paths like /public/<file>.
+app.use("/public", express.static(path.join(__dirname, "public")));
+
+// If a referenced /public file is missing (e.g., old local uploads), serve a placeholder.
+app.get("/public/*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "placeholder-image10.avif"));
+});
 
 // ================= ROUTES =================
 app.use("/api/auth", authRouter);
@@ -82,24 +111,7 @@ const PORT = process.env.PORT || 8001;
 const server = http.createServer(app);
 
 const io = new SocketIOServer(server, {
-  cors: {
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-
-      const normalized = origin.trim().replace(/\/+$/, "");
-
-      if (/^http:\/\/localhost:\d+$/.test(normalized)) {
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.has(normalized)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error("Socket CORS blocked"));
-    },
-    credentials: true,
-  },
+  cors: corsOptions,
 });
 
 app.set("io", io);
@@ -111,6 +123,16 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("Socket disconnected:", socket.id);
   });
+});
+
+// Central error handler (keeps CORS errors readable)
+app.use((err, req, res, next) => {
+  console.error(err);
+  const msg = err?.message || "Internal server error";
+  if (/^Not allowed by CORS/i.test(msg)) {
+    return res.status(403).json({ message: msg });
+  }
+  res.status(500).json({ message: msg });
 });
 
 // ================= DB + START =================
