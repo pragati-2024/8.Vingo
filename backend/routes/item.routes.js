@@ -17,10 +17,11 @@ const itemRouter = express.Router();
 
 itemRouter.post("/add-item", isAuth, upload.single("image"), addItem);
 itemRouter.post("/edit-item/:itemId", isAuth, upload.single("image"), editItem);
-itemRouter.get("/get-by-id/:itemId", isAuth, getItemById);
+// Read-only item endpoints should be public
+itemRouter.get("/get-by-id/:itemId", getItemById);
 itemRouter.get("/delete/:itemId", isAuth, deleteItem);
-itemRouter.get("/get-by-city/:city", isAuth, getItemByCity);
-itemRouter.get("/get-by-shop/:shopId", isAuth, getItemsByShop);
-itemRouter.get("/search-items", isAuth, searchItems);
+itemRouter.get("/get-by-city/:city", getItemByCity);
+itemRouter.get("/get-by-shop/:shopId", getItemsByShop);
+itemRouter.get("/search-items", searchItems);
 itemRouter.post("/rating", isAuth, rating);
 export default itemRouter;

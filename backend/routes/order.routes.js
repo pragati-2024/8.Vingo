@@ -3,6 +3,7 @@ import isAuth from "../middlewares/isAuth.js";
 import {
   acceptOrder,
   getCurrentOrder,
+  getAssignedOrdersForDelivery,
   getMyOrders,
   getOrderById,
   placeOrder,
@@ -22,7 +23,6 @@ const orderRouter = express.Router();
 orderRouter.post("/place", isAuth, placeOrder);
 orderRouter.post("/verify-payment", isAuth, verifyPayment);
 orderRouter.get("/my-orders", isAuth, getMyOrders);
-orderRouter.get("/:id", isAuth, getOrderById);
 orderRouter.post("/retry-broadcast", isAuth, retryBroadcast);
 
 // Order Status
@@ -33,10 +33,14 @@ orderRouter.post("/assign-manual", isAuth, manualAssign);
 orderRouter.get("/available", isAuth, getAvailableOrders);
 orderRouter.post("/accept", isAuth, acceptOrder);
 orderRouter.get("/current/delivery", isAuth, getCurrentOrder);
+orderRouter.get("/assigned/delivery", isAuth, getAssignedOrdersForDelivery);
 orderRouter.post("/send-otp", isAuth, sendDeliveryOtp);
 orderRouter.post("/verify-otp", isAuth, verifyDeliveryOtp);
 
 // Stats
 orderRouter.get("/today-deliveries", isAuth, getTodayDeliveries);
+
+// IMPORTANT: Keep this last so it doesn't shadow named routes like /available
+orderRouter.get("/:id", isAuth, getOrderById);
 
 export default orderRouter;
