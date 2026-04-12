@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 ## Vingo
 
 ### Backend
@@ -27,6 +27,3 @@
 - `npm run dev`
 
 Frontend talks to backend at `http://localhost:8001` (see `frontend/src/config.js`).
-=======
-All the codes merge here for testing.
->>>>>>> ed2fc8ad99bf987628f0047b6897d558d49b4b14
