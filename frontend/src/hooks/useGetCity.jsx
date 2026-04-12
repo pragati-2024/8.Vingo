@@ -8,7 +8,7 @@ import {
 } from "../redux/userSlice";
 import { setAddress, setLocation } from "../redux/mapSlice";
 
-function useGetCity() {
+function useGetCity(enabled = true) {
   const dispatch = useDispatch();
   const { currentCity } = useSelector((state) => state.user);
   const apiKey = import.meta.env.VITE_GEOAPIKEY;
@@ -21,6 +21,7 @@ function useGetCity() {
   }, [currentCity]);
 
   useEffect(() => {
+    if (!enabled) return;
     if (!apiKey) return;
     if (!navigator.geolocation) return;
 
@@ -120,7 +121,7 @@ function useGetCity() {
     return () => {
       isActive = false;
     };
-  }, [apiKey, dispatch]);
+  }, [enabled, apiKey, dispatch]);
 }
 
 export default useGetCity;

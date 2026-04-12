@@ -4,11 +4,12 @@ import { serverUrl } from "../config";
 import { useDispatch, useSelector } from "react-redux";
 import { setCurrentCity, setItemsInMyCity } from "../redux/userSlice";
 
-function useGetItemsByCity() {
+function useGetItemsByCity(enabled = true) {
   const dispatch = useDispatch();
   const { currentCity } = useSelector((state) => state.user);
 
   useEffect(() => {
+    if (!enabled) return;
     // Fallback to "mathura" if city is empty
     const targetCity = (currentCity || "").trim().toLowerCase() || "mathura";
     let isActive = true;
@@ -66,7 +67,7 @@ function useGetItemsByCity() {
       clearTimeout(t);
       controller.abort();
     };
-  }, [currentCity, dispatch]);
+  }, [enabled, currentCity, dispatch]);
 }
 
 export default useGetItemsByCity;

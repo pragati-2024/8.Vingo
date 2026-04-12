@@ -146,6 +146,23 @@ function Nav() {
       )}
 
       <div className="flex items-center gap-4">
+        {!userData && (
+          <>
+            <button
+              className="px-3 py-1 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-bold"
+              onClick={() => navigate("/signin")}
+            >
+              Sign In
+            </button>
+            <button
+              className="px-3 py-1 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] text-sm font-bold"
+              onClick={() => navigate("/signup")}
+            >
+              Sign Up
+            </button>
+          </>
+        )}
+
         {userData?.role == "user" &&
           (showSearch ? (
             <RxCross2
@@ -236,81 +253,86 @@ function Nav() {
               </Motion.div>
             )}
 
-            <button
-              className="hidden md:block px-3 py-1 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] text-sm font-medium"
-              onClick={() => navigate("/my-orders")}
-            >
-              My Orders
-            </button>
+            {userData?.role == "user" && (
+              <button
+                className="hidden md:block px-3 py-1 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] text-sm font-medium"
+                onClick={() => navigate("/my-orders")}
+              >
+                My Orders
+              </button>
+            )}
           </>
         )}
 
-        {/* ✅ SAFE FIX */}
-        <div
-          className="w-[40px] h-[40px] rounded-full flex items-center justify-center bg-gradient-to-br from-[#ff416c] to-[#ff4b2b] text-white text-[18px] shadow-lg font-black cursor-pointer hover:scale-105 transition-all"
-          onClick={() => setShowInfo((prev) => !prev)}
-        >
-          {userData?.fullName?.slice(0, 1)}
-        </div>
-
-        <AnimatePresence>
-          {showInfo && (
-            <Motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              className={`fixed top-[90px] right-[20px] 
-                    ${userData?.role == "deliveryBoy" ? "md:right-[20%] lg:right-[40%]" : "md:right-[10%] lg:right-[15%]"} 
-                    w-[220px] bg-white/90 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-[2rem] p-6 flex flex-col gap-4 z-[9999] border border-white/50`}
+        {userData && (
+          <>
+            <div
+              className="w-[40px] h-[40px] rounded-full flex items-center justify-center bg-gradient-to-br from-[#ff416c] to-[#ff4b2b] text-white text-[18px] shadow-lg font-black cursor-pointer hover:scale-105 transition-all"
+              onClick={() => setShowInfo((prev) => !prev)}
             >
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                  Logged in as
-                </span>
-                <div className="text-lg font-black text-gray-900 truncate">
-                  {userData?.fullName}
-                </div>
-              </div>
+              {userData?.fullName?.slice(0, 1)}
+            </div>
 
-              <div className="h-[1px] bg-gray-100 w-full"></div>
-
-              <div className="flex flex-col gap-2">
-                {userData?.role == "user" && (
-                  <button
-                    className="flex items-center gap-3 text-gray-600 font-bold hover:text-[#ff4d2d] transition-all p-2 rounded-xl hover:bg-orange-50"
-                    onClick={() => {
-                      navigate("/my-orders");
-                      setShowInfo(false);
-                    }}
-                  >
-                    <TbReceipt2 size={20} />
-                    <span>My Orders</span>
-                  </button>
-                )}
-
-                <button
-                  className="flex items-center gap-3 text-red-500 font-bold hover:bg-red-50 transition-all p-2 rounded-xl"
-                  onClick={handleLogOut}
+            <AnimatePresence>
+              {showInfo && (
+                <Motion.div
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                  className={`fixed top-[90px] right-[20px] 
+                        ${userData?.role == "deliveryBoy" ? "md:right-[20%] lg:right-[40%]" : "md:right-[10%] lg:right-[15%]"} 
+                        w-[220px] bg-white/90 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-[2rem] p-6 flex flex-col gap-4 z-[9999] border border-white/50`}
                 >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                    />
-                  </svg>
-                  <span>Log Out</span>
-                </button>
-              </div>
-            </Motion.div>
-          )}
-        </AnimatePresence>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                      Logged in as
+                    </span>
+                    <div className="text-lg font-black text-gray-900 truncate">
+                      {userData?.fullName}
+                    </div>
+                  </div>
+
+                  <div className="h-[1px] bg-gray-100 w-full"></div>
+
+                  <div className="flex flex-col gap-2">
+                    {userData?.role == "user" && (
+                      <button
+                        className="flex items-center gap-3 text-gray-600 font-bold hover:text-[#ff4d2d] transition-all p-2 rounded-xl hover:bg-orange-50"
+                        onClick={() => {
+                          navigate("/my-orders");
+                          setShowInfo(false);
+                        }}
+                      >
+                        <TbReceipt2 size={20} />
+                        <span>My Orders</span>
+                      </button>
+                    )}
+
+                    <button
+                      className="flex items-center gap-3 text-red-500 font-bold hover:bg-red-50 transition-all p-2 rounded-xl"
+                      onClick={handleLogOut}
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                        />
+                      </svg>
+                      <span>Log Out</span>
+                    </button>
+                  </div>
+                </Motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        )}
       </div>
     </div>
   );

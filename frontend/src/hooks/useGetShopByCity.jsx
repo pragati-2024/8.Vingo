@@ -30,11 +30,12 @@ import { serverUrl } from "../config";
 import { useDispatch, useSelector } from "react-redux";
 import { setCurrentCity, setShopsInMyCity } from "../redux/userSlice";
 
-function useGetShopByCity() {
+function useGetShopByCity(enabled = true) {
   const dispatch = useDispatch();
   const { currentCity } = useSelector((state) => state.user);
 
   useEffect(() => {
+    if (!enabled) return;
     const targetCity = (currentCity || "").trim().toLowerCase() || "mathura";
     let isActive = true;
     const controller = new AbortController();
@@ -92,7 +93,7 @@ function useGetShopByCity() {
       clearTimeout(t);
       controller.abort();
     };
-  }, [currentCity, dispatch]);
+  }, [enabled, currentCity, dispatch]);
 }
 
 export default useGetShopByCity;

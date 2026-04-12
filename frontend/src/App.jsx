@@ -18,6 +18,7 @@ import MyOrders from "./pages/MyOrders";
 import TrackOrderPage from "./pages/TrackOrderPage";
 import Shop from "./pages/Shop";
 import ContactUs from "./pages/ContactUs";
+import PublicLanding from "./pages/PublicLanding";
 
 import useGetCurrentUser from "./hooks/useGetCurrentUser";
 import useGetCity from "./hooks/useGetCity";
@@ -35,14 +36,17 @@ function App() {
   const { userData } = useSelector((state) => state.user);
   const dispatch = useDispatch();
 
+  const isAuthed = Boolean(userData);
+  const enableUserCityFeatures = userData?.role === "user";
+
   const userId = userData?._id;
 
   useGetCurrentUser();
   useUpdateLocation();
-  useGetCity();
+  useGetCity(enableUserCityFeatures);
   useGetMyshop();
-  useGetShopByCity();
-  useGetItemsByCity();
+  useGetShopByCity(enableUserCityFeatures);
+  useGetItemsByCity(enableUserCityFeatures);
   useGetMyOrders();
 
   useEffect(() => {
@@ -91,116 +95,55 @@ function App() {
           element={!userData ? <ForgotPassword /> : <Navigate to="/" />}
         />
 
-        <Route
-          path="/"
-          element={
-            userData === undefined ? null : userData ? (
-              <Home />
-            ) : (
-              <Navigate to="/signin" />
-            )
-          }
-        />
+        <Route path="/" element={isAuthed ? <Home /> : <PublicLanding />} />
         <Route
           path="/create-edit-shop"
           element={
-            userData === undefined ? null : userData ? (
-              <CreateEditShop />
-            ) : (
-              <Navigate to="/signin" />
-            )
+            isAuthed ? <CreateEditShop /> : <Navigate to="/signin" replace />
           }
         />
         <Route
           path="/add-shop"
           element={
-            userData === undefined ? null : userData ? (
-              <CreateEditShop />
-            ) : (
-              <Navigate to="/signin" />
-            )
+            isAuthed ? <CreateEditShop /> : <Navigate to="/signin" replace />
           }
         />
         <Route
           path="/add-item"
-          element={
-            userData === undefined ? null : userData ? (
-              <AddItem />
-            ) : (
-              <Navigate to="/signin" />
-            )
-          }
+          element={isAuthed ? <AddItem /> : <Navigate to="/signin" replace />}
         />
         <Route
           path="/edit-item/:itemId"
-          element={
-            userData === undefined ? null : userData ? (
-              <EditItem />
-            ) : (
-              <Navigate to="/signin" />
-            )
-          }
+          element={isAuthed ? <EditItem /> : <Navigate to="/signin" replace />}
         />
         <Route
           path="/cart"
-          element={
-            userData === undefined ? null : userData ? (
-              <CartPage />
-            ) : (
-              <Navigate to="/signin" />
-            )
-          }
+          element={isAuthed ? <CartPage /> : <Navigate to="/signin" replace />}
         />
         <Route
           path="/checkout"
-          element={
-            userData === undefined ? null : userData ? (
-              <CheckOut />
-            ) : (
-              <Navigate to="/signin" />
-            )
-          }
+          element={isAuthed ? <CheckOut /> : <Navigate to="/signin" replace />}
         />
         <Route
           path="/order-placed"
           element={
-            userData === undefined ? null : userData ? (
-              <OrderPlaced />
-            ) : (
-              <Navigate to="/signin" />
-            )
+            isAuthed ? <OrderPlaced /> : <Navigate to="/signin" replace />
           }
         />
         <Route path="/about" element={<AboutUs />} />
         <Route
           path="/my-orders"
-          element={
-            userData === undefined ? null : userData ? (
-              <MyOrders />
-            ) : (
-              <Navigate to="/signin" />
-            )
-          }
+          element={isAuthed ? <MyOrders /> : <Navigate to="/signin" replace />}
         />
         <Route
           path="/track-order/:orderId"
           element={
-            userData === undefined ? null : userData ? (
-              <TrackOrderPage />
-            ) : (
-              <Navigate to="/signin" />
-            )
+            isAuthed ? <TrackOrderPage /> : <Navigate to="/signin" replace />
           }
         />
         <Route
           path="/shop/:shopId"
-          element={
-            userData === undefined ? null : userData ? (
-              <Shop />
-            ) : (
-              <Navigate to="/signin" />
-            )
-          }
+          element={isAuthed ? <Shop /> : <Navigate to="/signin" replace />}
         />
         <Route path="/contact" element={<ContactUs />} />
 
