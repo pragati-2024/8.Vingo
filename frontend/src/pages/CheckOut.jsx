@@ -75,6 +75,7 @@ function CheckOut() {
     try {
       const result = await axios.get(
         `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&format=json&apiKey=${apiKey}`,
+        { withCredentials: false },
       );
       const addr =
         result?.data?.results[0]?.formatted ||
@@ -91,6 +92,7 @@ function CheckOut() {
     try {
       const result = await axios.get(
         `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(addressInput)}&apiKey=${apiKey}`,
+        { withCredentials: false },
       );
       if (result.data.features && result.data.features.length > 0) {
         const feature = result.data.features[0];
