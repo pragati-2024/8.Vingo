@@ -2,6 +2,18 @@ import User from "../models/user.model.js";
 import bcrypt, { hash } from "bcryptjs";
 import genToken from "../utils/token.js";
 import { sendOtpMail } from "../utils/mail.js";
+
+const buildAuthCookieOptions = () => {
+  const isProd = process.env.NODE_ENV === "production";
+  return {
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
+    path: "/",
+  };
+};
+
 export const signUp = async (req, res) => {
   try {
     const { fullName, email, password, mobile, role } = req.body;
@@ -39,12 +51,7 @@ export const signUp = async (req, res) => {
     });
 
     const token = await genToken(user._id);
-    res.cookie("token", token, {
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      httpOnly: true,
-    });
+    res.cookie("token", token, buildAuthCookieOptions());
 
     const safeUser = user.toObject();
     delete safeUser.password;
@@ -116,12 +123,7 @@ export const signIn = async (req, res) => {
     }
 
     const token = await genToken(user._id);
-    res.cookie("token", token, {
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      httpOnly: true,
-    });
+    res.cookie("token", token, buildAuthCookieOptions());
 
     const safeUser = user.toObject();
     delete safeUser.password;
@@ -135,7 +137,7 @@ export const signIn = async (req, res) => {
 
 export const signOut = async (req, res) => {
   try {
-    res.clearCookie("token");
+    res.clearCookie("token", buildAuthCookieOptions());
     return res.status(200).json({ message: "log out successfully" });
   } catch (error) {
     return res
@@ -255,10 +257,7 @@ export const googleAuth = async (req, res) => {
 
     const token = await genToken(user._id);
     res.cookie("token", token, {
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      httpOnly: true,
+      ...buildAuthCookieOptions(),
     });
 
     const safeUser = user.toObject();

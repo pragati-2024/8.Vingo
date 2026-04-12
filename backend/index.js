@@ -29,19 +29,53 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+const normalizeOrigin = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/\/+$/, "");
+
+const allowedOrigins = (() => {
+  const raw = [
+    process.env.CLIENT_URL, // backward-compatible single origin
+    process.env.CLIENT_URLS, // comma-separated
+    process.env.ALLOWED_ORIGINS, // comma-separated
+  ]
+    .filter(Boolean)
+    .join(",");
+
+  const list = raw
+    .split(",")
+    .map((s) => normalizeOrigin(s))
+    .filter(Boolean);
+
+  return new Set(list);
+})();
+
+const allowVercelApp =
+  String(process.env.ALLOW_VERCEL_APP || "").toLowerCase() === "true";
+
 const corsOptions = {
   origin: (origin, callback) => {
     // allow non-browser clients (e.g. curl, Postman)
     if (!origin) return callback(null, true);
 
-    const isLocalhost = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/i.test(origin);
+    const normalized = normalizeOrigin(origin);
+
+    const isLocalhost = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/i.test(
+      normalized,
+    );
     if (isLocalhost) return callback(null, true);
 
-    if (process.env.CLIENT_URL && origin === process.env.CLIENT_URL) {
+    if (allowedOrigins.has(normalized)) return callback(null, true);
+
+    if (
+      allowVercelApp &&
+      /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(normalized)
+    ) {
       return callback(null, true);
     }
 
-    return callback(new Error("Not allowed by CORS"));
+    return callback(new Error(`Not allowed by CORS: ${normalized}`));
   },
   credentials: true,
 };
@@ -63,7 +97,11 @@ app.use("/api/order", orderRouter);
 // Central error handler (keeps CORS errors readable)
 app.use((err, req, res, next) => {
   console.error(err);
-  res.status(500).json({ message: err?.message || "Internal server error" });
+  const msg = err?.message || "Internal server error";
+  if (/^Not allowed by CORS/i.test(msg)) {
+    return res.status(403).json({ message: msg });
+  }
+  res.status(500).json({ message: msg });
 });
 
 // Default to 8001 to match `backend/.env.example` and the frontend dev config.

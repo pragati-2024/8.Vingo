@@ -1,5 +1,9 @@
-export const serverUrl =
-  import.meta.env.VITE_SERVER_URL || "http://localhost:8001";
+const rawServerUrl =
+  import.meta.env.VITE_SERVER_URL ||
+  import.meta.env.VITE_BASE_URL ||
+  "http://localhost:8001";
+
+export const serverUrl = String(rawServerUrl).replace(/\/+$/, "");
 
 export const resolveMediaUrl = (maybeUrl) => {
   if (!maybeUrl) return maybeUrl;
