@@ -117,11 +117,34 @@ function SignUp() {
         return;
       }
       const result = await signInWithPopup(auth, provider);
+
+      const providerProfile = Array.isArray(result?.user?.providerData)
+        ? result.user.providerData.find(
+            (p) => p?.providerId === "google.com",
+          ) || result.user.providerData[0]
+        : null;
+
+      const googleFullName =
+        result?.user?.displayName || providerProfile?.displayName || "";
+      const googleEmail = result?.user?.email || providerProfile?.email || "";
+
+      // As a last resort (some Firebase edge cases), fall back to typed values.
+      const fallbackFullName = String(fullName || "").trim();
+      const fallbackEmail = String(email || "").trim();
+
+      const finalFullName = (googleFullName || fallbackFullName).trim();
+      const finalEmail = (googleEmail || fallbackEmail).trim();
+
+      if (!finalEmail) {
+        setErr("email is required");
+        return;
+      }
+
       const { data } = await axios.post(
         `${serverUrl}/api/auth/google-auth`,
         {
-          fullName: result.user.displayName,
-          email: result.user.email,
+          fullName: finalFullName,
+          email: finalEmail,
           role,
           mobile: normalizedMobile,
         },

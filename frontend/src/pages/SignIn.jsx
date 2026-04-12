@@ -69,12 +69,28 @@ function SignIn() {
 
     try {
       const result = await signInWithPopup(auth, provider);
+
+      const providerProfile = Array.isArray(result?.user?.providerData)
+        ? result.user.providerData.find(
+            (p) => p?.providerId === "google.com",
+          ) || result.user.providerData[0]
+        : null;
+
+      const googleFullName =
+        result?.user?.displayName || providerProfile?.displayName || "";
+      const googleEmail = result?.user?.email || providerProfile?.email || "";
+
+      if (!googleEmail) {
+        setErr("email is required");
+        return;
+      }
+
       try {
         const { data } = await axios.post(
           `${serverUrl}/api/auth/google-auth`,
           {
-            fullName: result.user.displayName,
-            email: result.user.email,
+            fullName: googleFullName,
+            email: googleEmail,
           },
           { withCredentials: true },
         );
