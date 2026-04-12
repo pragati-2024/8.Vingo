@@ -15,6 +15,10 @@ import { resolveMediaUrl, serverUrl } from "../config";
 import TrustSection from "./TrustSection";
 import { motion } from "framer-motion";
 
+import scooterImg from "../assets/scooter.png";
+import homeImg from "../assets/home.png";
+import shopImg from "../assets/shop.png";
+
 import { ClipLoader } from "react-spinners";
 
 function UserDashboard() {
@@ -180,7 +184,7 @@ function UserDashboard() {
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 0.8, x: 0 }}
           transition={{ duration: 1, delay: 0.5 }}
-          src="/src/assets/scooter.png"
+          src={scooterImg}
           className="absolute left-[10%] top-[20%] w-24 md:w-40 hidden lg:block drop-shadow-2xl animate-pulse"
           alt="decoration"
         />
@@ -188,7 +192,7 @@ function UserDashboard() {
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 0.8, x: 0 }}
           transition={{ duration: 1, delay: 0.7 }}
-          src="/src/assets/home.png"
+          src={homeImg}
           className="absolute right-[10%] bottom-[20%] w-24 md:w-40 hidden lg:block drop-shadow-2xl"
           alt="decoration"
         />
@@ -202,7 +206,7 @@ function UserDashboard() {
           >
             <div className="bg-white/10 backdrop-blur-md p-4 rounded-full border border-white/20">
               <img
-                src="/src/assets/scooter.png"
+                src={scooterImg}
                 alt="Scooter"
                 className="w-12 md:w-20 drop-shadow-2xl"
               />
@@ -468,7 +472,7 @@ function UserDashboard() {
                 className="flex flex-col items-center text-center p-8 bg-[#f8f9fb] rounded-3xl border border-gray-100 shadow-sm group hover:shadow-2xl transition-all duration-500"
               >
                 <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform">
-                  <img src="/src/assets/shop.png" alt="Shop" className="w-14" />
+                  <img src={shopImg} alt="Shop" className="w-14" />
                 </div>
                 <h3 className="text-xl font-black text-gray-900 uppercase mb-2">
                   1. Select Restaurant
@@ -483,11 +487,7 @@ function UserDashboard() {
                 className="flex flex-col items-center text-center p-8 bg-[#f8f9fb] rounded-3xl border border-gray-100 shadow-sm group hover:shadow-2xl transition-all duration-500"
               >
                 <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform">
-                  <img
-                    src="/src/assets/home.png"
-                    alt="Order"
-                    className="w-14"
-                  />
+                  <img src={homeImg} alt="Order" className="w-14" />
                 </div>
                 <h3 className="text-xl font-black text-gray-900 uppercase mb-2">
                   2. Place Order
@@ -502,11 +502,7 @@ function UserDashboard() {
                 className="flex flex-col items-center text-center p-8 bg-[#f8f9fb] rounded-3xl border border-gray-100 shadow-sm group hover:shadow-2xl transition-all duration-500"
               >
                 <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform">
-                  <img
-                    src="/src/assets/scooter.png"
-                    alt="Delivery"
-                    className="w-14"
-                  />
+                  <img src={scooterImg} alt="Delivery" className="w-14" />
                 </div>
                 <h3 className="text-xl font-black text-gray-900 uppercase mb-2">
                   3. Fast Delivery
