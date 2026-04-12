@@ -48,7 +48,17 @@ function App() {
   useEffect(() => {
     if (!userId) return;
 
-    const socketInstance = io(serverUrl, { withCredentials: true });
+    let token = null;
+    try {
+      token = localStorage.getItem("vingo_token");
+    } catch {
+      // ignore
+    }
+
+    const socketInstance = io(serverUrl, {
+      withCredentials: true,
+      auth: token ? { token } : undefined,
+    });
     dispatch(setSocket(socketInstance));
 
     socketInstance.on("connect", () => {
@@ -84,68 +94,112 @@ function App() {
         <Route
           path="/"
           element={
-            userData === undefined ? null : userData ? <Home /> : <Navigate to="/signin" />
+            userData === undefined ? null : userData ? (
+              <Home />
+            ) : (
+              <Navigate to="/signin" />
+            )
           }
         />
         <Route
           path="/create-edit-shop"
           element={
-            userData === undefined ? null : userData ? <CreateEditShop /> : <Navigate to="/signin" />
+            userData === undefined ? null : userData ? (
+              <CreateEditShop />
+            ) : (
+              <Navigate to="/signin" />
+            )
           }
         />
         <Route
           path="/add-shop"
           element={
-            userData === undefined ? null : userData ? <CreateEditShop /> : <Navigate to="/signin" />
+            userData === undefined ? null : userData ? (
+              <CreateEditShop />
+            ) : (
+              <Navigate to="/signin" />
+            )
           }
         />
         <Route
           path="/add-item"
           element={
-            userData === undefined ? null : userData ? <AddItem /> : <Navigate to="/signin" />
+            userData === undefined ? null : userData ? (
+              <AddItem />
+            ) : (
+              <Navigate to="/signin" />
+            )
           }
         />
         <Route
           path="/edit-item/:itemId"
           element={
-            userData === undefined ? null : userData ? <EditItem /> : <Navigate to="/signin" />
+            userData === undefined ? null : userData ? (
+              <EditItem />
+            ) : (
+              <Navigate to="/signin" />
+            )
           }
         />
         <Route
           path="/cart"
           element={
-            userData === undefined ? null : userData ? <CartPage /> : <Navigate to="/signin" />
+            userData === undefined ? null : userData ? (
+              <CartPage />
+            ) : (
+              <Navigate to="/signin" />
+            )
           }
         />
         <Route
           path="/checkout"
           element={
-            userData === undefined ? null : userData ? <CheckOut /> : <Navigate to="/signin" />
+            userData === undefined ? null : userData ? (
+              <CheckOut />
+            ) : (
+              <Navigate to="/signin" />
+            )
           }
         />
         <Route
           path="/order-placed"
           element={
-            userData === undefined ? null : userData ? <OrderPlaced /> : <Navigate to="/signin" />
+            userData === undefined ? null : userData ? (
+              <OrderPlaced />
+            ) : (
+              <Navigate to="/signin" />
+            )
           }
         />
         <Route path="/about" element={<AboutUs />} />
         <Route
           path="/my-orders"
           element={
-            userData === undefined ? null : userData ? <MyOrders /> : <Navigate to="/signin" />
+            userData === undefined ? null : userData ? (
+              <MyOrders />
+            ) : (
+              <Navigate to="/signin" />
+            )
           }
         />
         <Route
           path="/track-order/:orderId"
           element={
-            userData === undefined ? null : userData ? <TrackOrderPage /> : <Navigate to="/signin" />
+            userData === undefined ? null : userData ? (
+              <TrackOrderPage />
+            ) : (
+              <Navigate to="/signin" />
+            )
           }
         />
         <Route
           path="/shop/:shopId"
           element={
-            userData === undefined ? null : userData ? <Shop /> : <Navigate to="/signin" />
+            userData === undefined ? null : userData ? (
+              <Shop />
+            ) : (
+              <Navigate to="/signin" />
+            )
           }
         />
         <Route path="/contact" element={<ContactUs />} />

@@ -55,7 +55,7 @@ export const signUp = async (req, res) => {
 
     const safeUser = user.toObject();
     delete safeUser.password;
-    return res.status(201).json(safeUser);
+    return res.status(201).json({ ...safeUser, token });
   } catch (error) {
     return res
       .status(500)
@@ -127,7 +127,7 @@ export const signIn = async (req, res) => {
 
     const safeUser = user.toObject();
     delete safeUser.password;
-    return res.status(200).json(safeUser);
+    return res.status(200).json({ ...safeUser, token });
   } catch (error) {
     return res
       .status(500)
@@ -262,7 +262,7 @@ export const googleAuth = async (req, res) => {
 
     const safeUser = user.toObject();
     delete safeUser.password;
-    return res.status(200).json(safeUser);
+    return res.status(200).json({ ...safeUser, token });
   } catch (error) {
     return res
       .status(500)

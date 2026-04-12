@@ -45,6 +45,16 @@ function SignIn() {
         },
         { withCredentials: true },
       );
+
+      try {
+        if (result?.data?.token) {
+          localStorage.setItem("vingo_token", result.data.token);
+          axios.defaults.headers.common.Authorization = `Bearer ${result.data.token}`;
+        }
+      } catch {
+        // ignore
+      }
+
       dispatch(setUserData(result.data));
       setErr("");
       setLoading(false);
@@ -69,6 +79,16 @@ function SignIn() {
           },
           { withCredentials: true },
         );
+
+        try {
+          if (data?.token) {
+            localStorage.setItem("vingo_token", data.token);
+            axios.defaults.headers.common.Authorization = `Bearer ${data.token}`;
+          }
+        } catch {
+          // ignore
+        }
+
         dispatch(setUserData(data));
         setErr("");
       } catch (apiError) {

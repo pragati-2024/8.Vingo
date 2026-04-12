@@ -37,6 +37,13 @@ function Nav() {
         withCredentials: true,
       });
 
+      try {
+        localStorage.removeItem("vingo_token");
+        delete axios.defaults.headers.common.Authorization;
+      } catch {
+        // ignore
+      }
+
       dispatch(setUserData(null));
       setShowInfo(false); // 🔥 added
       navigate("/signin"); // 🔥 added

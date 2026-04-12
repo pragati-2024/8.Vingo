@@ -168,6 +168,19 @@ io.on("connection", (socket) => {
     // Ignore invalid/expired tokens for socket connections.
   }
 
+  // Fallback: accept token passed via Socket.IO handshake auth.
+  try {
+    const authToken = socket.handshake?.auth?.token;
+    if (authToken && process.env.JWT_SECRET) {
+      const decoded = jwt.verify(String(authToken), process.env.JWT_SECRET);
+      if (decoded?.userId) {
+        identifySocketUser(decoded.userId);
+      }
+    }
+  } catch (e) {
+    // Ignore invalid/expired tokens for socket connections.
+  }
+
   socket.on("identity", async ({ userId } = {}) => {
     identifySocketUser(userId);
   });
