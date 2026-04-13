@@ -37,7 +37,7 @@ function CheckOut() {
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const apiKey = "d183f054238e4a908235492d334571c3";
+  const apiKey = import.meta.env.VITE_GEOAPIKEY;
 
   const deliveryFee = totalAmount > 500 ? 0 : 40;
   const gst = Math.round(totalAmount * 0.05);
@@ -72,6 +72,10 @@ function CheckOut() {
   };
 
   const getAddressByLatLng = async (lat, lng) => {
+    if (!apiKey) {
+      console.warn("Geoapify disabled: VITE_GEOAPIKEY not set");
+      return;
+    }
     try {
       const result = await axios.get(
         `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&format=json&apiKey=${apiKey}`,
@@ -89,6 +93,10 @@ function CheckOut() {
 
   const getLatLngByAddress = async () => {
     if (!addressInput) return;
+    if (!apiKey) {
+      console.warn("Geoapify disabled: VITE_GEOAPIKEY not set");
+      return;
+    }
     try {
       const result = await axios.get(
         `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(addressInput)}&apiKey=${apiKey}`,

@@ -5,6 +5,7 @@ import App from "./App.jsx";
 import { BrowserRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { store } from "./redux/store.js";
+import { setUserData } from "./redux/userSlice.js";
 import axios from "axios";
 import { serverUrl } from "./config.js";
 
@@ -64,6 +65,7 @@ axios.interceptors.response.use(
 
       if (status === 401 && isBackend) {
         localStorage.removeItem("vingo_token");
+        store.dispatch(setUserData(null));
       }
     } catch {
       // ignore
