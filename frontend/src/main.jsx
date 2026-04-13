@@ -50,6 +50,28 @@ axios.interceptors.request.use((config) => {
   return config;
 });
 
+// If a stale/expired token is stored in localStorage, it can override a valid
+// cookie session (because we attach Authorization). Clearing it on 401 helps
+// recovery without requiring a hard refresh.
+axios.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    try {
+      const status = error?.response?.status;
+      const url = String(error?.config?.url || "");
+      const isAbsolute = /^https?:\/\//i.test(url);
+      const isBackend = !isAbsolute || url.startsWith(serverUrl);
+
+      if (status === 401 && isBackend) {
+        localStorage.removeItem("vingo_token");
+      }
+    } catch {
+      // ignore
+    }
+    return Promise.reject(error);
+  },
+);
+
 createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <Provider store={store}>
