@@ -29,21 +29,33 @@ function RecenterMap({ position }) {
 function DeliveryBoyTracking({ deliveryBoyLocation, customerLocation }) {
     // Handle both {lat, lon} and [lon, lat] formats
     const getPos = (loc) => {
-        if (!loc) return [0, 0]
-        if (Array.isArray(loc)) return [loc[1], loc[0]]
-        return [loc.lat, loc.lon]
+        if (!loc) return null
+        if (Array.isArray(loc)) {
+            const lat = Number(loc[1])
+            const lon = Number(loc[0])
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null
+            if (lat === 0 && lon === 0) return null
+            return [lat, lon]
+        }
+        const lat = Number(loc.lat)
+        const lon = Number(loc.lon)
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null
+        if (lat === 0 && lon === 0) return null
+        return [lat, lon]
     }
 
     const dbPos = getPos(deliveryBoyLocation)
     const custPos = getPos(customerLocation)
 
-    const path = [dbPos, custPos]
+    const fallbackCenter = [20.5937, 78.9629]
+    const center = dbPos || custPos || fallbackCenter
+    const path = dbPos && custPos ? [dbPos, custPos] : []
 
     return (
         <div className='w-full h-full rounded-xl overflow-hidden shadow-md border border-gray-100'>
             <MapContainer
                 className="w-full h-full"
-                center={dbPos}
+                center={center}
                 zoom={16}
                 scrollWheelZoom={false}
             >
@@ -52,16 +64,23 @@ function DeliveryBoyTracking({ deliveryBoyLocation, customerLocation }) {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 
-                <Marker position={dbPos} icon={deliveryBoyIcon}>
-                    <Popup>Delivery Boy (You)</Popup>
-                </Marker>
+                {dbPos && (
+                    <Marker position={dbPos} icon={deliveryBoyIcon}>
+                        <Popup>Delivery Boy (You)</Popup>
+                    </Marker>
+                )}
 
-                <Marker position={custPos} icon={customerIcon}>
-                    <Popup>Customer Location</Popup>
-                </Marker>
+                {custPos && (
+                    <Marker position={custPos} icon={customerIcon}>
+                        <Popup>Customer Location</Popup>
+                    </Marker>
+                )}
 
-                <Polyline positions={path} color='#ff4d2d' weight={4} dashArray="10, 10" />
-                <RecenterMap position={dbPos} />
+                {path.length > 0 && (
+                    <Polyline positions={path} color='#ff4d2d' weight={4} dashArray="10, 10" />
+                )}
+
+                {dbPos && <RecenterMap position={dbPos} />}
             </MapContainer>
         </div>
     )

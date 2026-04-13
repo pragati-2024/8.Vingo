@@ -89,7 +89,8 @@ function useGetCity(enabled = true) {
       });
     };
 
-    // If permissions API exists, avoid auto-triggering the prompt.
+    // If permissions API exists, never auto-trigger the prompt.
+    // Only run if permission is already granted.
     const permissions = navigator.permissions;
     if (permissions?.query) {
       permissions
@@ -100,22 +101,13 @@ function useGetCity(enabled = true) {
             requestLocation();
             return;
           }
-          if (status.state === "denied") return;
-
-          // state === 'prompt' → wait for the next user gesture
-          const onGesture = () => {
-            window.removeEventListener("pointerdown", onGesture);
-            requestLocation();
-          };
-          window.addEventListener("pointerdown", onGesture, { once: true });
+          // denied/prompt -> don't request. User can still click Detect Location in Checkout.
         })
         .catch(() => {
-          // Fallback: request immediately (older browsers)
-          requestLocation();
+          // Fallback: don't request (older browsers often prompt automatically)
         });
     } else {
-      // Fallback: request immediately (older browsers)
-      requestLocation();
+      // Older browsers: avoid auto-prompt; user can still use Checkout button.
     }
 
     return () => {

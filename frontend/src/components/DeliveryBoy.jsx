@@ -40,9 +40,15 @@ function DeliveryBoy() {
   const [_loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
-  const [liveLocation, setLiveLocation] = useState(
-    userData?.location?.coordinates || [0, 0],
-  );
+  const [liveLocation, setLiveLocation] = useState(() => {
+    const coords = userData?.location?.coordinates;
+    if (!Array.isArray(coords) || coords.length < 2) return null;
+    const lon = Number(coords[0]);
+    const lat = Number(coords[1]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    if (lat === 0 && lon === 0) return null;
+    return [lon, lat];
+  });
 
   const activeShopOrder = useMemo(() => {
     if (!currentOrder || !Array.isArray(currentOrder.shopOrders)) return null;

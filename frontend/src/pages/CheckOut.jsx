@@ -63,11 +63,24 @@ function CheckOut() {
       dispatch(setLocation({ lat: latitude, lon: longitude }));
       getAddressByLatLng(latitude, longitude);
     } else if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((pos) => {
-        const { latitude, longitude } = pos.coords;
-        dispatch(setLocation({ lat: latitude, lon: longitude }));
-        getAddressByLatLng(latitude, longitude);
-      });
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          dispatch(setLocation({ lat: latitude, lon: longitude }));
+          getAddressByLatLng(latitude, longitude);
+        },
+        (err) => {
+          const code = err?.code;
+          if (code === 1) {
+            alert(
+              "Location permission is blocked/denied. Please allow Location for this site in browser settings and try again.",
+            );
+            return;
+          }
+          alert("Unable to detect location. Please try again.");
+        },
+        { enableHighAccuracy: false, maximumAge: 30_000, timeout: 10_000 },
+      );
     }
   };
 
