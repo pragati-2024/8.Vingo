@@ -95,6 +95,30 @@ function DeliveryBoy() {
     return Array.from(map.values()).filter((x) => x.name);
   }, [currentOrder]);
 
+  const getDeliveryLogTitle = useCallback((order) => {
+    const shopOrders = Array.isArray(order?.shopOrders) ? order.shopOrders : [];
+    const names = [];
+
+    for (const so of shopOrders) {
+      const items = Array.isArray(so?.shopOrderItems) ? so.shopOrderItems : [];
+      for (const item of items) {
+        const name = String(item?.name || "").trim();
+        if (name) names.push(name);
+      }
+    }
+
+    const uniqueNames = Array.from(new Set(names));
+    if (uniqueNames.length === 0) {
+      const shortId = String(order?._id || "")
+        .slice(-6)
+        .toUpperCase();
+      return shortId ? `ORDER #${shortId}` : "ORDER";
+    }
+
+    if (uniqueNames.length === 1) return uniqueNames[0];
+    return `${uniqueNames[0]} +${uniqueNames.length - 1} more`;
+  }, []);
+
   const dedupeByOrderId = useCallback((list) => {
     const arr = Array.isArray(list) ? list : [];
     const seen = new Set();
@@ -788,12 +812,12 @@ function DeliveryBoy() {
               <div className="space-y-4">
                 {todayDeliveries.slice(0, 5).map((d, i) => (
                   <div
-                    key={i}
+                    key={d?._id || i}
                     className="flex items-center justify-between p-5 bg-gray-50 rounded-2xl border border-gray-100"
                   >
                     <div>
                       <p className="font-black text-gray-900 text-sm">
-                        MISSION #{d._id.slice(-6).toUpperCase()}
+                        {getDeliveryLogTitle(d)}
                       </p>
                       <p className="text-[10px] text-gray-400 font-black uppercase">
                         {new Date(d.createdAt).toLocaleTimeString()}

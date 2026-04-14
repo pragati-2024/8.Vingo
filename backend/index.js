@@ -15,6 +15,8 @@ import itemRouter from "./routes/item.routes.js";
 import orderRouter from "./routes/order.routes.js";
 
 import { Server as SocketIOServer } from "socket.io";
+import jwt from "jsonwebtoken";
+import User from "./models/user.model.js";
 
 dotenv.config();
 
@@ -129,8 +131,87 @@ app.set("io", io);
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id);
 
+  const safeVerifyToken = (token) => {
+    if (!token || !process.env.JWT_SECRET) return null;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      return decoded?.userId ? String(decoded.userId) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const joinIdentityRooms = async (userId) => {
+    const uid = userId ? String(userId) : "";
+    if (!uid) return;
+
+    socket.data.userId = uid;
+    socket.join(uid);
+
+    try {
+      const user = await User.findById(uid).select("role");
+      if (user?.role) socket.join(`role:${user.role}`);
+      await User.findByIdAndUpdate(uid, {
+        socketId: socket.id,
+        isOnline: true,
+      });
+    } catch (e) {
+      console.warn("Socket identity join failed:", e?.message || e);
+    }
+  };
+
+  // If client provided token in handshake auth, use it.
+  const handshakeToken = socket.handshake?.auth?.token;
+  const handshakeUserId = safeVerifyToken(handshakeToken);
+  if (handshakeUserId) {
+    joinIdentityRooms(handshakeUserId);
+  }
+
+  // Client will also emit identity({ userId }) after redux loads.
+  socket.on("identity", async (payload) => {
+    // Prefer handshake token-derived identity if present.
+    if (socket.data.userId) return;
+    const uid = payload?.userId ? String(payload.userId) : "";
+    await joinIdentityRooms(uid);
+  });
+
+  socket.on("joinOrder", (orderId) => {
+    const id = orderId ? String(orderId) : "";
+    if (!id) return;
+    socket.join(`order:${id}`);
+  });
+
+  socket.on("leaveOrder", (orderId) => {
+    const id = orderId ? String(orderId) : "";
+    if (!id) return;
+    socket.leave(`order:${id}`);
+  });
+
+  // Delivery boy sends live GPS updates; forward to order room.
+  socket.on("updateLocation", (data) => {
+    const orderId = data?.orderId ? String(data.orderId) : "";
+    if (!orderId) return;
+    const latitude = Number(data?.latitude);
+    const longitude = Number(data?.longitude);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+    if (latitude === 0 && longitude === 0) return;
+
+    io.to(`order:${orderId}`).emit("deliveryLocationUpdate", {
+      orderId,
+      latitude,
+      longitude,
+    });
+  });
+
   socket.on("disconnect", () => {
     console.log("Socket disconnected:", socket.id);
+
+    const uid = socket.data.userId;
+    if (uid) {
+      User.findByIdAndUpdate(uid, { isOnline: false, socketId: null })
+        .then(() => {})
+        .catch(() => {});
+    }
   });
 });
 

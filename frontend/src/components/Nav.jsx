@@ -290,6 +290,11 @@ function Nav() {
                     <div className="text-lg font-black text-gray-900 truncate">
                       {userData?.fullName}
                     </div>
+                    {userData?.role && (
+                      <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                        Role: {String(userData.role)}
+                      </div>
+                    )}
                   </div>
 
                   <div className="h-[1px] bg-gray-100 w-full"></div>

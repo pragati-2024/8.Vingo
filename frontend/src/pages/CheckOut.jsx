@@ -13,7 +13,7 @@ import axios from "axios";
 import { FaMobileScreenButton } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import { serverUrl } from "../config";
-import { addMyOrder } from "../redux/userSlice";
+import { addMyOrder, clearCart } from "../redux/userSlice";
 import { motion, AnimatePresence } from "framer-motion";
 
 function RecenterMap({ location }) {
@@ -35,6 +35,8 @@ function CheckOut() {
   const { cartItems, totalAmount, userData } = useSelector(
     (state) => state.user,
   );
+  // Some eslint setups don't count `motion.div` as a variable usage.
+  const _motion = motion;
   const [addressInput, setAddressInput] = useState(address || "");
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [loading, setLoading] = useState(false);
@@ -45,6 +47,7 @@ function CheckOut() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const apiKey = import.meta.env.VITE_GEOAPIKEY;
+  const cartStorageKey = userData?._id ? `vingo_cart:${userData._id}` : null;
 
   const deliveryFee = totalAmount > 500 ? 0 : 40;
   const gst = Math.round(totalAmount * 0.05);
@@ -292,6 +295,12 @@ function CheckOut() {
 
       if (paymentMethod === "cod") {
         dispatch(addMyOrder(result.data));
+        dispatch(clearCart());
+        try {
+          if (cartStorageKey) localStorage.removeItem(cartStorageKey);
+        } catch {
+          // ignore
+        }
         navigate("/order-placed", {
           state: { orderData: { orderId: result.data._id } },
         });
@@ -337,10 +346,16 @@ function CheckOut() {
             { withCredentials: true },
           );
           dispatch(addMyOrder(res.data));
+          dispatch(clearCart());
+          try {
+            if (cartStorageKey) localStorage.removeItem(cartStorageKey);
+          } catch {
+            // ignore
+          }
           navigate("/order-placed", {
             state: { orderData: { orderId: res.data._id } },
           });
-        } catch (error) {
+        } catch {
           alert("Payment verification failed");
         }
       },
@@ -359,7 +374,7 @@ function CheckOut() {
 
     try {
       const rzp = new window.Razorpay(options);
-      rzp.on("payment.failed", function (response) {
+      rzp.on("payment.failed", function () {
         handleFakePaymentSuccess(orderId);
       });
       rzp.open();
@@ -380,10 +395,16 @@ function CheckOut() {
         { withCredentials: true },
       );
       dispatch(addMyOrder(res.data));
+      dispatch(clearCart());
+      try {
+        if (cartStorageKey) localStorage.removeItem(cartStorageKey);
+      } catch {
+        // ignore
+      }
       navigate("/order-placed", {
         state: { orderData: { orderId: res.data._id } },
       });
-    } catch (error) {
+    } catch {
       alert("Fake payment verification failed");
     }
   };
