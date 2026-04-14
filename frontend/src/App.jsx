@@ -36,6 +36,7 @@ function App() {
   const dispatch = useDispatch();
 
   const isAuthed = Boolean(userData);
+  const authReady = userData !== undefined;
   const enableUserCityFeatures = userData?.role === "user";
   const userId = userData?._id;
 
@@ -82,74 +83,145 @@ function App() {
         <Routes>
           <Route
             path="/signup"
-            element={!userData ? <SignUp /> : <Navigate to="/" />}
+            element={
+              authReady ? !userData ? <SignUp /> : <Navigate to="/" /> : null
+            }
           />
           <Route
             path="/signin"
-            element={!userData ? <SignIn /> : <Navigate to="/" />}
+            element={
+              authReady ? !userData ? <SignIn /> : <Navigate to="/" /> : null
+            }
           />
           <Route
             path="/forgot-password"
             element={!userData ? <ForgotPassword /> : <Navigate to="/" />}
           />
 
-          <Route path="/" element={isAuthed ? <Home /> : <PublicLanding />} />
+          <Route
+            path="/"
+            element={authReady ? isAuthed ? <Home /> : <PublicLanding /> : null}
+          />
           <Route
             path="/create-edit-shop"
             element={
-              isAuthed ? <CreateEditShop /> : <Navigate to="/signin" replace />
+              authReady ? (
+                isAuthed ? (
+                  <CreateEditShop />
+                ) : (
+                  <Navigate to="/signin" replace />
+                )
+              ) : null
             }
           />
           <Route
             path="/add-shop"
             element={
-              isAuthed ? <CreateEditShop /> : <Navigate to="/signin" replace />
+              authReady ? (
+                isAuthed ? (
+                  <CreateEditShop />
+                ) : (
+                  <Navigate to="/signin" replace />
+                )
+              ) : null
             }
           />
           <Route
             path="/add-item"
-            element={isAuthed ? <AddItem /> : <Navigate to="/signin" replace />}
+            element={
+              authReady ? (
+                isAuthed ? (
+                  <AddItem />
+                ) : (
+                  <Navigate to="/signin" replace />
+                )
+              ) : null
+            }
           />
           <Route
             path="/edit-item/:itemId"
             element={
-              isAuthed ? <EditItem /> : <Navigate to="/signin" replace />
+              authReady ? (
+                isAuthed ? (
+                  <EditItem />
+                ) : (
+                  <Navigate to="/signin" replace />
+                )
+              ) : null
             }
           />
           <Route
             path="/cart"
             element={
-              isAuthed ? <CartPage /> : <Navigate to="/signin" replace />
+              authReady ? (
+                isAuthed ? (
+                  <CartPage />
+                ) : (
+                  <Navigate to="/signin" replace />
+                )
+              ) : null
             }
           />
           <Route
             path="/checkout"
             element={
-              isAuthed ? <CheckOut /> : <Navigate to="/signin" replace />
+              authReady ? (
+                isAuthed ? (
+                  <CheckOut />
+                ) : (
+                  <Navigate to="/signin" replace />
+                )
+              ) : null
             }
           />
           <Route
             path="/order-placed"
             element={
-              isAuthed ? <OrderPlaced /> : <Navigate to="/signin" replace />
+              authReady ? (
+                isAuthed ? (
+                  <OrderPlaced />
+                ) : (
+                  <Navigate to="/signin" replace />
+                )
+              ) : null
             }
           />
           <Route path="/about" element={<AboutUs />} />
           <Route
             path="/my-orders"
             element={
-              isAuthed ? <MyOrders /> : <Navigate to="/signin" replace />
+              authReady ? (
+                isAuthed ? (
+                  <MyOrders />
+                ) : (
+                  <Navigate to="/signin" replace />
+                )
+              ) : null
             }
           />
           <Route
             path="/track-order/:orderId"
             element={
-              isAuthed ? <TrackOrderPage /> : <Navigate to="/signin" replace />
+              authReady ? (
+                isAuthed ? (
+                  <TrackOrderPage />
+                ) : (
+                  <Navigate to="/signin" replace />
+                )
+              ) : null
             }
           />
           <Route
             path="/shop/:shopId"
-            element={isAuthed ? <Shop /> : <Navigate to="/signin" replace />}
+            element={
+              authReady ? (
+                isAuthed ? (
+                  <Shop />
+                ) : (
+                  <Navigate to="/signin" replace />
+                )
+              ) : null
+            }
           />
           <Route path="/contact" element={<ContactUs />} />
 
