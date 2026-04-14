@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { IoSearchOutline } from "react-icons/io5";
 import { TbCurrentLocation } from "react-icons/tb";
@@ -39,6 +39,9 @@ function CheckOut() {
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [loading, setLoading] = useState(false);
 
+  const geoWatchIdRef = useRef(null);
+  const geoTimeoutRef = useRef(null);
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const apiKey = import.meta.env.VITE_GEOAPIKEY;
@@ -53,6 +56,25 @@ function CheckOut() {
   useEffect(() => {
     if (address) setAddressInput(address);
   }, [address]);
+
+  useEffect(() => {
+    return () => {
+      try {
+        if (geoWatchIdRef.current != null && navigator.geolocation) {
+          navigator.geolocation.clearWatch(geoWatchIdRef.current);
+        }
+      } catch {
+        // ignore
+      }
+      try {
+        if (geoTimeoutRef.current != null) {
+          clearTimeout(geoTimeoutRef.current);
+        }
+      } catch {
+        // ignore
+      }
+    };
+  }, []);
 
   const onDragEnd = (e) => {
     const { lat, lng } = e.target.getLatLng();
@@ -79,21 +101,99 @@ function CheckOut() {
     }
 
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords;
-          if (
-            !Number.isFinite(latitude) ||
-            !Number.isFinite(longitude) ||
-            (latitude === 0 && longitude === 0)
-          ) {
-            alert(
-              "Unable to get a valid live location from this device. Please enable Location Services and try again.",
-            );
-            return;
+      // Clear any previous pending watch/timeout (user might click multiple times)
+      try {
+        if (geoWatchIdRef.current != null) {
+          navigator.geolocation.clearWatch(geoWatchIdRef.current);
+          geoWatchIdRef.current = null;
+        }
+      } catch {
+        // ignore
+      }
+      try {
+        if (geoTimeoutRef.current != null) {
+          clearTimeout(geoTimeoutRef.current);
+          geoTimeoutRef.current = null;
+        }
+      } catch {
+        // ignore
+      }
+
+      const isValidCoords = (latitude, longitude) =>
+        Number.isFinite(latitude) &&
+        Number.isFinite(longitude) &&
+        !(latitude === 0 && longitude === 0);
+
+      const applyPosition = (pos) => {
+        const { latitude, longitude } = pos.coords || {};
+        if (!isValidCoords(latitude, longitude)) {
+          alert(
+            "Unable to get a valid live location from this device. Please enable Location Services and try again.",
+          );
+          return;
+        }
+        dispatch(setLocation({ lat: latitude, lon: longitude }));
+        getAddressByLatLng(latitude, longitude);
+      };
+
+      let bestPos = null;
+      let done = false;
+
+      const finish = () => {
+        if (done) return;
+        done = true;
+        try {
+          if (geoWatchIdRef.current != null) {
+            navigator.geolocation.clearWatch(geoWatchIdRef.current);
+            geoWatchIdRef.current = null;
           }
-          dispatch(setLocation({ lat: latitude, lon: longitude }));
-          getAddressByLatLng(latitude, longitude);
+        } catch {
+          // ignore
+        }
+        try {
+          if (geoTimeoutRef.current != null) {
+            clearTimeout(geoTimeoutRef.current);
+            geoTimeoutRef.current = null;
+          }
+        } catch {
+          // ignore
+        }
+
+        if (bestPos) {
+          applyPosition(bestPos);
+        } else {
+          alert("Unable to detect location. Please try again.");
+        }
+      };
+
+      const consider = (pos) => {
+        const { latitude, longitude, accuracy } = pos.coords || {};
+        if (!isValidCoords(latitude, longitude)) return;
+
+        const nextAcc = Number.isFinite(accuracy) ? accuracy : Infinity;
+        const bestAcc =
+          bestPos?.coords && Number.isFinite(bestPos.coords.accuracy)
+            ? bestPos.coords.accuracy
+            : Infinity;
+
+        if (!bestPos || nextAcc < bestAcc) {
+          bestPos = pos;
+        }
+
+        // If we already got a very accurate fix, finish early.
+        if (nextAcc <= 60) {
+          finish();
+        }
+      };
+
+      // Give the device a few seconds to refine location (common on desktop).
+      geoTimeoutRef.current = setTimeout(() => {
+        finish();
+      }, 12_000);
+
+      geoWatchIdRef.current = navigator.geolocation.watchPosition(
+        (pos) => {
+          consider(pos);
         },
         (err) => {
           const code = err?.code;
@@ -101,11 +201,13 @@ function CheckOut() {
             alert(
               "Location permission is blocked/denied. Please allow Location for this site in browser settings and try again.",
             );
+            // No point in waiting.
+            finish();
             return;
           }
-          alert("Unable to detect location. Please try again.");
+          // For other errors (timeout/unavailable), still try finishing with bestPos if we have one.
+          finish();
         },
-        // Force a fresh & more accurate fix when user explicitly asks.
         { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 },
       );
     }
