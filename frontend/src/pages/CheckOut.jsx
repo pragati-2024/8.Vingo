@@ -20,7 +20,9 @@ function RecenterMap({ location }) {
   const map = useMap();
   useEffect(() => {
     const hasValidLocation =
-      Number.isFinite(location?.lat) && Number.isFinite(location?.lon);
+      Number.isFinite(location?.lat) &&
+      Number.isFinite(location?.lon) &&
+      !(location.lat === 0 && location.lon === 0);
     if (hasValidLocation) {
       map.setView([location.lat, location.lon], 16, { animate: true });
     }
@@ -80,6 +82,16 @@ function CheckOut() {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude } = pos.coords;
+          if (
+            !Number.isFinite(latitude) ||
+            !Number.isFinite(longitude) ||
+            (latitude === 0 && longitude === 0)
+          ) {
+            alert(
+              "Unable to get a valid live location from this device. Please enable Location Services and try again.",
+            );
+            return;
+          }
           dispatch(setLocation({ lat: latitude, lon: longitude }));
           getAddressByLatLng(latitude, longitude);
         },
@@ -93,12 +105,15 @@ function CheckOut() {
           }
           alert("Unable to detect location. Please try again.");
         },
-        { enableHighAccuracy: false, maximumAge: 30_000, timeout: 10_000 },
+        // Force a fresh & more accurate fix when user explicitly asks.
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 },
       );
     }
   };
 
   const getAddressByLatLng = async (lat, lng) => {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    if (lat === 0 && lng === 0) return;
     if (!apiKey) {
       console.warn("Geoapify disabled: VITE_GEOAPIKEY not set");
       return;
@@ -111,6 +126,10 @@ function CheckOut() {
       const addr =
         result?.data?.results[0]?.formatted ||
         result?.data?.results[0]?.address_line2;
+      const normalizedAddr = String(addr || "")
+        .trim()
+        .toLowerCase();
+      if (!normalizedAddr || normalizedAddr === "earth") return;
       dispatch(setAddress(addr));
       setAddressInput(addr);
     } catch (error) {
@@ -288,22 +307,34 @@ function CheckOut() {
           <IoIosArrowRoundBack size={28} />
         </motion.button>
 
-        <MapContainer
-          center={[location.lat || 20.5937, location.lon || 78.9629]}
-          zoom={13}
-          style={{ height: "100%", width: "100%" }}
-          zoomControl={false}
-        >
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {Number.isFinite(location?.lat) && Number.isFinite(location?.lon) && (
-            <Marker
-              position={[location.lat, location.lon]}
-              draggable={true}
-              eventHandlers={{ dragend: onDragEnd }}
-            />
-          )}
-          <RecenterMap location={location} />
-        </MapContainer>
+        {(() => {
+          const hasValidLocation =
+            Number.isFinite(location?.lat) &&
+            Number.isFinite(location?.lon) &&
+            !(location.lat === 0 && location.lon === 0);
+          const centerLat = hasValidLocation ? location.lat : 20.5937;
+          const centerLon = hasValidLocation ? location.lon : 78.9629;
+          return (
+            <MapContainer
+              center={[centerLat, centerLon]}
+              zoom={13}
+              style={{ height: "100%", width: "100%" }}
+              zoomControl={false}
+            >
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              {Number.isFinite(location?.lat) &&
+                Number.isFinite(location?.lon) &&
+                !(location.lat === 0 && location.lon === 0) && (
+                  <Marker
+                    position={[location.lat, location.lon]}
+                    draggable={true}
+                    eventHandlers={{ dragend: onDragEnd }}
+                  />
+                )}
+              <RecenterMap location={location} />
+            </MapContainer>
+          );
+        })()}
 
         {/* Floating Delivery Form Card - Compact & Side Aligned */}
         <div className="absolute bottom-8 left-8 z-[1000] w-[340px] hidden lg:block">

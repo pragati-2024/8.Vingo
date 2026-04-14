@@ -35,17 +35,33 @@ function useGetCity(enabled = true) {
       if (!isActive) return;
       const latitude = position.coords.latitude;
       const longitude = position.coords.longitude;
+
+      // Some devices/browsers can return a useless default like (0,0), which reverse-geocodes to "Earth".
+      const hasValidCoords =
+        Number.isFinite(latitude) &&
+        Number.isFinite(longitude) &&
+        !(latitude === 0 && longitude === 0);
+      if (!hasValidCoords) return;
+
       dispatch(setLocation({ lat: latitude, lon: longitude }));
 
-      const result = await axios.get(
-        `https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&format=json&apiKey=${apiKey}`,
-        { withCredentials: false },
-      );
+      let result;
+      try {
+        result = await axios.get(
+          `https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&format=json&apiKey=${apiKey}`,
+          { withCredentials: false },
+        );
+      } catch (e) {
+        console.warn("Reverse geocode failed:", e?.message || e);
+        return;
+      }
 
-      const resolvedCity =
+      const resolvedCityRaw =
         result?.data?.results?.[0]?.city || result?.data?.results?.[0]?.county;
 
-      const normalizedResolved = (resolvedCity || "").trim().toLowerCase();
+      // If geo provider returns Earth/Unknown-ish values, ignore.
+      const normalizedResolved = (resolvedCityRaw || "").trim().toLowerCase();
+      if (!normalizedResolved || normalizedResolved === "earth") return;
       const normalizedCurrent = (currentCityRef.current || "")
         .trim()
         .toLowerCase();
@@ -57,7 +73,7 @@ function useGetCity(enabled = true) {
           normalizedResolved !== lastResolvedCityRef.current
         ) {
           lastResolvedCityRef.current = normalizedResolved;
-          dispatch(setCurrentCity(resolvedCity));
+          dispatch(setCurrentCity(resolvedCityRaw));
           try {
             sessionStorage.setItem("vingo_city_auto", "1");
           } catch {
@@ -101,13 +117,30 @@ function useGetCity(enabled = true) {
             requestLocation();
             return;
           }
-          // denied/prompt -> don't request. User can still click Detect Location in Checkout.
+          if (status.state === "denied") return;
+
+          // state === 'prompt' → wait for a user gesture, then request.
+          const onGesture = () => {
+            window.removeEventListener("pointerdown", onGesture);
+            requestLocation();
+          };
+          window.addEventListener("pointerdown", onGesture, { once: true });
         })
         .catch(() => {
-          // Fallback: don't request (older browsers often prompt automatically)
+          // Fallback: wait for a user gesture, then request.
+          const onGesture = () => {
+            window.removeEventListener("pointerdown", onGesture);
+            requestLocation();
+          };
+          window.addEventListener("pointerdown", onGesture, { once: true });
         });
     } else {
-      // Older browsers: avoid auto-prompt; user can still use Checkout button.
+      // Older browsers: avoid auto-prompt; request only after a user gesture.
+      const onGesture = () => {
+        window.removeEventListener("pointerdown", onGesture);
+        requestLocation();
+      };
+      window.addEventListener("pointerdown", onGesture, { once: true });
     }
 
     return () => {
