@@ -19,7 +19,9 @@ import { motion, AnimatePresence } from "framer-motion";
 function RecenterMap({ location }) {
   const map = useMap();
   useEffect(() => {
-    if (location.lat && location.lon) {
+    const hasValidLocation =
+      Number.isFinite(location?.lat) && Number.isFinite(location?.lon);
+    if (hasValidLocation) {
       map.setView([location.lat, location.lon], 16, { animate: true });
     }
   }, [location, map]);
@@ -57,12 +59,24 @@ function CheckOut() {
   };
 
   const getCurrentLocation = () => {
-    if (userData?.location?.coordinates) {
-      const latitude = userData.location.coordinates[1];
-      const longitude = userData.location.coordinates[0];
+    const coords = userData?.location?.coordinates;
+    const hasSavedCoords =
+      Array.isArray(coords) &&
+      coords.length === 2 &&
+      Number.isFinite(coords[0]) &&
+      Number.isFinite(coords[1]) &&
+      // Backend default is [0,0] which is not useful; treat as unset.
+      !(coords[0] === 0 && coords[1] === 0);
+
+    if (hasSavedCoords) {
+      const longitude = coords[0];
+      const latitude = coords[1];
       dispatch(setLocation({ lat: latitude, lon: longitude }));
       getAddressByLatLng(latitude, longitude);
-    } else if (navigator.geolocation) {
+      return;
+    }
+
+    if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude } = pos.coords;
@@ -281,7 +295,7 @@ function CheckOut() {
           zoomControl={false}
         >
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {location.lat && location.lon && (
+          {Number.isFinite(location?.lat) && Number.isFinite(location?.lon) && (
             <Marker
               position={[location.lat, location.lon]}
               draggable={true}

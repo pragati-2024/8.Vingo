@@ -9,7 +9,6 @@ import useGetMyshop from "./hooks/useGetMyShop";
 import useGetShopByCity from "./hooks/useGetShopByCity";
 import useGetItemsByCity from "./hooks/useGetItemsByCity";
 import useGetMyOrders from "./hooks/useGetMyOrders";
-import useUpdateLocation from "./hooks/useUpdateLocation";
 
 import { setSocket, setUserOnline } from "./redux/userSlice";
 import Layout from "./components/Layout";
@@ -41,7 +40,6 @@ function App() {
   const userId = userData?._id;
 
   useGetCurrentUser();
-  useUpdateLocation();
   useGetCity(enableUserCityFeatures);
   useGetMyshop();
   useGetShopByCity(enableUserCityFeatures);

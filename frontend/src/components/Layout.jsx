@@ -2,8 +2,11 @@ import React from "react";
 import Footer from "./Footer";
 import Nav from "./Nav";
 import AnimatedStarBackground from "./AnimatedStarBackGround";
+import useUpdateLocation from "../hooks/useUpdateLocation";
 
 const Layout = ({ children }) => {
+  useUpdateLocation();
+
   return (
     <div className="min-h-screen flex flex-col relative overflow-x-hidden">
       <AnimatedStarBackground />
