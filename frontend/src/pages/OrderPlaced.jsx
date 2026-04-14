@@ -18,15 +18,29 @@
 
 // export default OrderPlaced
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { FaCheckCircle, FaHome, FaShoppingBag } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useDispatch, useSelector } from "react-redux";
+import { clearCart } from "../redux/userSlice";
 
 function OrderPlaced() {
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
+  const userId = useSelector((state) => state.user.userData?._id) || null;
   const orderData = location.state?.orderData;
+
+  useEffect(() => {
+    if (!orderData?.orderId) return;
+    dispatch(clearCart());
+    try {
+      if (userId) localStorage.removeItem(`vingo_cart:${userId}`);
+    } catch {
+      // ignore
+    }
+  }, [dispatch, orderData?.orderId, userId]);
 
   const confetti = useMemo(() => {
     return [...Array(6)].map((_, i) => ({

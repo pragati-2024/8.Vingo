@@ -17,14 +17,42 @@ function MyOrders() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const filteredOrders = useMemo(() => {
+  const { activeOrders, historyOrders } = useMemo(() => {
     const orders = Array.isArray(myOrders) ? myOrders : [];
-    if (userData?.role !== "owner") return orders;
-    // Owner receives flattened orders { _id, shopOrder }. Hide completed ones from active list.
-    return orders.filter((o) => {
-      const status = String(o?.shopOrder?.status || "").trim().toLowerCase();
-      return status !== "delivered";
-    });
+    const role = userData?.role;
+
+    const normStatus = (s) =>
+      String(s || "")
+        .trim()
+        .toLowerCase();
+
+    // Owner receives flattened orders { _id, shopOrder }
+    if (role === "owner") {
+      const active = [];
+      const history = [];
+      for (const o of orders) {
+        const status = normStatus(o?.shopOrder?.status);
+        if (status === "delivered") history.push(o);
+        else active.push(o);
+      }
+      return { activeOrders: active, historyOrders: history };
+    }
+
+    // User/deliveryBoy receive full order with shopOrders[]
+    const isDeliveredOrder = (order) => {
+      const subs = Array.isArray(order?.shopOrders) ? order.shopOrders : [];
+      if (subs.length === 0) return false;
+      return subs.every((so) => normStatus(so?.status) === "delivered");
+    };
+
+    const active = [];
+    const history = [];
+    for (const o of orders) {
+      if (isDeliveredOrder(o)) history.push(o);
+      else active.push(o);
+    }
+
+    return { activeOrders: active, historyOrders: history };
   }, [myOrders, userData?.role]);
 
   useEffect(() => {
@@ -113,7 +141,7 @@ function MyOrders() {
             </h1>
           </div>
           <div className="space-y-6">
-            {filteredOrders.length === 0 && (
+            {activeOrders.length === 0 && historyOrders.length === 0 && (
               <div className="text-center py-20 bg-gray-50/50 rounded-3xl border border-dashed border-gray-200">
                 <p className="text-gray-400 font-bold uppercase tracking-widest text-xs italic">
                   No orders found yet 😔
@@ -128,14 +156,43 @@ function MyOrders() {
                 </button>
               </div>
             )}
-            {filteredOrders.map((order, index) =>
-              userData?.role == "user" ? (
-                <UserOrderCard data={order} key={order._id || index} />
-              ) : userData?.role == "owner" ? (
-                <OwnerOrderCard data={order} key={order._id || index} />
-              ) : userData?.role == "deliveryBoy" ? (
-                <UserOrderCard data={order} key={order._id || index} />
-              ) : null,
+
+            {activeOrders.length > 0 && (
+              <div className="pt-2">
+                <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-3">
+                  Active
+                </p>
+                <div className="space-y-6">
+                  {activeOrders.map((order, index) =>
+                    userData?.role == "user" ? (
+                      <UserOrderCard data={order} key={order._id || index} />
+                    ) : userData?.role == "owner" ? (
+                      <OwnerOrderCard data={order} key={order._id || index} />
+                    ) : userData?.role == "deliveryBoy" ? (
+                      <UserOrderCard data={order} key={order._id || index} />
+                    ) : null,
+                  )}
+                </div>
+              </div>
+            )}
+
+            {historyOrders.length > 0 && (
+              <div className="pt-2">
+                <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-3">
+                  History
+                </p>
+                <div className="space-y-6">
+                  {historyOrders.map((order, index) =>
+                    userData?.role == "user" ? (
+                      <UserOrderCard data={order} key={order._id || index} />
+                    ) : userData?.role == "owner" ? (
+                      <OwnerOrderCard data={order} key={order._id || index} />
+                    ) : userData?.role == "deliveryBoy" ? (
+                      <UserOrderCard data={order} key={order._id || index} />
+                    ) : null,
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </div>
