@@ -78,8 +78,9 @@ const userSlice = createSlice({
       const nextHadUser = Boolean(nextUserId);
       const userChanged =
         prevHadUser && nextHadUser && prevUserId !== nextUserId;
-      const loggedOut = prevHadUser && !nextHadUser && action.payload === null;
-      if (userChanged || loggedOut) {
+      // NOTE: Do not clear cart on logout/re-login for the same device.
+      // Cart persistence is handled per-user by a hook.
+      if (userChanged) {
         state.cartItems = [];
         state.totalAmount = 0;
         state.myOrders = [];
@@ -155,6 +156,19 @@ const userSlice = createSlice({
     clearCart: (state) => {
       state.cartItems = [];
       state.totalAmount = 0;
+    },
+
+    setCart: (state, action) => {
+      const items = Array.isArray(action.payload?.cartItems)
+        ? action.payload.cartItems
+        : [];
+      state.cartItems = items;
+      state.totalAmount = state.cartItems.reduce((sum, i) => {
+        const price = Number(i?.price);
+        const quantity = Number(i?.quantity);
+        if (!Number.isFinite(price) || !Number.isFinite(quantity)) return sum;
+        return sum + price * quantity;
+      }, 0);
     },
 
     setMyOrders: (state, action) => {
@@ -262,6 +276,7 @@ export const {
   updateQuantity,
   removeCartItem,
   clearCart,
+  setCart,
   setMyOrders,
   setLoadingOrders,
   addMyOrder,
