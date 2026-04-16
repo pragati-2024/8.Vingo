@@ -40,6 +40,7 @@ function DeliveryBoy() {
   const [_loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
+  const [showAllGigs, setShowAllGigs] = useState(false);
   const [liveLocation, setLiveLocation] = useState(() => {
     const coords = userData?.location?.coordinates;
     if (!Array.isArray(coords) || coords.length < 2) return null;
@@ -49,6 +50,19 @@ function DeliveryBoy() {
     if (lat === 0 && lon === 0) return null;
     return [lon, lat];
   });
+
+  const otherAssignedOrders = useMemo(() => {
+    const list = Array.isArray(assignedOrders) ? assignedOrders : [];
+    const currentId = currentOrder?._id?.toString?.();
+    return currentId
+      ? list.filter((o) => (o?._id?.toString?.() ?? "") !== currentId)
+      : list;
+  }, [assignedOrders, currentOrder?._id]);
+
+  const gigsToShow = useMemo(() => {
+    const list = Array.isArray(availableOrders) ? availableOrders : [];
+    return showAllGigs ? list : list.slice(0, 4);
+  }, [availableOrders, showAllGigs]);
 
   const activeShopOrder = useMemo(() => {
     if (!currentOrder || !Array.isArray(currentOrder.shopOrders)) return null;
@@ -227,6 +241,8 @@ function DeliveryBoy() {
     };
 
     const handleAssignedOrder = (data) => {
+      const hadActive = Boolean(currentOrder?._id);
+
       setAssignedOrders((prev) => {
         const next = Array.isArray(prev) ? prev : [];
         const incomingId = data?._id?.toString?.() ?? String(data?._id ?? "");
@@ -235,11 +251,17 @@ function DeliveryBoy() {
         );
         return exists ? next : [data, ...next];
       });
-      setCurrentOrder(data);
+
+      // If you're already working on a mission, don't forcibly switch.
+      setCurrentOrder((prev) => prev || data);
       setShowOtpBox(false);
       setOtp("");
       setShowCompleted(false);
-      setMessage("You've been assigned an active mission!");
+      setMessage(
+        hadActive
+          ? "New mission added to your queue!"
+          : "You've been assigned an active mission!",
+      );
       setTimeout(() => setMessage(""), 3000);
     };
 
@@ -303,29 +325,43 @@ function DeliveryBoy() {
 
   const handleAccept = async (orderId) => {
     try {
+      const hadActive = Boolean(currentOrder?._id);
+
       const res = await axios.post(
         `${serverUrl}/api/order/accept`,
         { orderId },
         { withCredentials: true },
       );
-      setCurrentOrder(res.data.order);
+
+      const acceptedOrder = res.data.order;
+
+      // If you're already working on a mission, keep focus there and add this to the queue.
+      if (!hadActive) {
+        setCurrentOrder(acceptedOrder);
+      }
+
       setAssignedOrders((prev) => {
         const next = Array.isArray(prev) ? prev : [];
         const incomingId =
-          res.data.order?._id?.toString?.() ??
-          String(res.data.order?._id ?? "");
+          acceptedOrder?._id?.toString?.() ?? String(acceptedOrder?._id ?? "");
         const exists = next.some(
           (o) => (o?._id?.toString?.() ?? String(o?._id ?? "")) === incomingId,
         );
-        return exists ? next : [res.data.order, ...next];
+        return exists ? next : [acceptedOrder, ...next];
       });
+
       const acceptedId = orderId?.toString?.() ?? String(orderId ?? "");
       setAvailableOrders((prev) =>
         prev.filter(
           (a) => (a?._id?.toString?.() ?? String(a?._id ?? "")) !== acceptedId,
         ),
       );
-      setMessage("Order accepted successfully!");
+
+      setMessage(
+        hadActive
+          ? "Added to your mission queue!"
+          : "Order accepted successfully!",
+      );
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
       setMessage(error.response?.data?.message || "Accept error");
@@ -549,6 +585,58 @@ function DeliveryBoy() {
                   </div>
                 </div>
 
+                {Array.isArray(assignedOrders) && assignedOrders.length > 1 && (
+                  <div className="px-8 pt-6">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">
+                      Mission queue
+                    </p>
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                      {assignedOrders.map((o) => {
+                        const isActive =
+                          String(o?._id) === String(currentOrder?._id);
+                        const status =
+                          o?.shopOrders?.find((so) => {
+                            const assigned =
+                              so?.assignedDeliveryBoy?._id?.toString?.() ||
+                              so?.assignedDeliveryBoy?.toString?.();
+                            return assigned === userData?._id?.toString?.();
+                          })?.status || o?.shopOrders?.[0]?.status;
+
+                        return (
+                          <button
+                            key={o._id}
+                            type="button"
+                            onClick={() => {
+                              setCurrentOrder(o);
+                              setShowOtpBox(false);
+                              setOtp("");
+                              setShowCompleted(false);
+                            }}
+                            className={`shrink-0 px-4 py-2 rounded-2xl border text-xs font-black uppercase tracking-widest transition ${
+                              isActive
+                                ? "bg-gray-900 text-white border-gray-900"
+                                : "bg-white text-gray-700 border-gray-200 hover:border-[#ff4d2d]/50"
+                            }`}
+                            title={o.user?.fullName || "Customer"}
+                          >
+                            #{String(o._id).slice(-6)}{" "}
+                            <span
+                              className={
+                                isActive ? "text-white/70" : "text-gray-400"
+                              }
+                            >
+                              • {String(status || "in progress")}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-2 text-xs text-gray-400 font-semibold">
+                      OTP issue? Switch missions and return later.
+                    </p>
+                  </div>
+                )}
+
                 <div className="p-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-6">
@@ -684,8 +772,134 @@ function DeliveryBoy() {
                         >
                           Verify
                         </button>
+                        <button
+                          onClick={sendOtp}
+                          type="button"
+                          className="bg-white border-2 border-gray-200 text-gray-800 px-10 rounded-3xl font-black uppercase tracking-widest hover:border-[#ff4d2d]/50 transition-all"
+                        >
+                          Resend OTP
+                        </button>
                       </div>
                     </motion.div>
+                  )}
+
+                  {(showOtpBox ||
+                    activeShopOrder?.status === "out of delivery") && (
+                    <>
+                      {Array.isArray(otherAssignedOrders) &&
+                        otherAssignedOrders.length > 0 && (
+                          <div className="mt-10 bg-gray-50 rounded-[2.5rem] p-8 border border-gray-100">
+                            <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">
+                              Other active missions
+                            </h3>
+                            <p className="mt-1 text-gray-500 font-medium text-sm">
+                              If this order is stuck (OTP/customer), start
+                              another and come back.
+                            </p>
+
+                            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              {otherAssignedOrders.slice(0, 4).map((o) => (
+                                <button
+                                  key={o._id}
+                                  type="button"
+                                  onClick={() => {
+                                    setCurrentOrder(o);
+                                    setShowOtpBox(false);
+                                    setOtp("");
+                                    setShowCompleted(false);
+                                  }}
+                                  className="text-left bg-white rounded-3xl p-5 border border-gray-100 shadow-sm hover:border-[#ff4d2d]/40 transition"
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                        Mission
+                                      </p>
+                                      <p className="font-black text-gray-900 truncate">
+                                        #{String(o._id).slice(-6)}
+                                      </p>
+                                      <p className="text-sm text-gray-500 font-semibold truncate">
+                                        {o.user?.fullName || "Customer"}
+                                      </p>
+                                    </div>
+                                    <div className="shrink-0 text-right">
+                                      <p className="text-xl font-black text-[#ff4d2d]">
+                                        ₹{o.totalAmount}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                      {Array.isArray(availableOrders) &&
+                        availableOrders.length > 0 && (
+                          <div className="mt-10 bg-gray-50 rounded-[2.5rem] p-8 border border-gray-100">
+                            <div className="flex items-center justify-between gap-4">
+                              <div>
+                                <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">
+                                  Take another gig
+                                </h3>
+                                <p className="mt-1 text-gray-500 font-medium text-sm">
+                                  Accept a second order and add it to your
+                                  queue.
+                                </p>
+                              </div>
+                              {availableOrders.length > 4 && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setShowAllGigs((prev) => !prev)
+                                  }
+                                  className="px-4 py-2 rounded-2xl bg-white border border-gray-200 text-xs font-black uppercase tracking-widest text-gray-700 hover:border-[#ff4d2d]/50 transition"
+                                >
+                                  {showAllGigs
+                                    ? "Show less"
+                                    : `Show all (${availableOrders.length})`}
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              {gigsToShow.map((order) => (
+                                <div
+                                  key={order._id}
+                                  className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm"
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                        Nearby
+                                      </p>
+                                      <p className="font-black text-gray-900 truncate">
+                                        {order.user?.fullName || "Customer"}
+                                      </p>
+                                      <p className="text-sm text-gray-500 font-semibold truncate">
+                                        {order.deliveryAddress?.text}
+                                      </p>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                      <p className="text-xl font-black text-[#ff4d2d]">
+                                        ₹{order.totalAmount}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAccept(order._id)}
+                                    className="mt-4 w-full bg-gray-900 text-white py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-black transition-all"
+                                  >
+                                    Add to queue
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                    </>
                   )}
                 </div>
               </motion.div>
