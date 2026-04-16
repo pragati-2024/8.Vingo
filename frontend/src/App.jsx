@@ -1,7 +1,6 @@
 import React, { Suspense, useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { io } from "socket.io-client";
 
 import useGetCurrentUser from "./hooks/useGetCurrentUser";
 import useGetCity from "./hooks/useGetCity";
@@ -57,29 +56,69 @@ function App() {
       // ignore
     }
 
-    const socketInstance = io(serverUrl, {
-      withCredentials: true,
-      auth: token ? { token } : undefined,
-    });
-    dispatch(setSocket(socketInstance));
+    // Lazy-load socket.io so unauthenticated users get a faster initial bundle.
+    let socketInstance = null;
+    let cancelled = false;
 
-    socketInstance.on("connect", () => {
-      socketInstance.emit("identity", { userId });
-      dispatch(setUserOnline(true));
-    });
+    (async () => {
+      try {
+        const mod = await import("socket.io-client");
+        if (cancelled) return;
 
-    socketInstance.on("disconnect", () => {
-      dispatch(setUserOnline(false));
-    });
+        const socket = mod.io(serverUrl, {
+          withCredentials: true,
+          auth: token ? { token } : undefined,
+        });
+
+        socketInstance = socket;
+        dispatch(setSocket(socket));
+
+        socket.on("connect", () => {
+          socket.emit("identity", { userId });
+          dispatch(setUserOnline(true));
+        });
+
+        socket.on("disconnect", () => {
+          dispatch(setUserOnline(false));
+        });
+      } catch {
+        // ignore
+      }
+    })();
 
     return () => {
-      socketInstance.disconnect();
+      cancelled = true;
+      try {
+        socketInstance?.disconnect();
+      } catch {
+        // ignore
+      }
     };
   }, [dispatch, userId]);
 
+  const splash = (
+    <div className="w-full flex items-center justify-center px-4 pt-27.5 pb-10">
+      <div className="w-full max-w-xl bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-6 md:p-10 text-center shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+        <h2 className="text-3xl md:text-4xl font-black text-white">
+          Welcome to <span className="text-[#ff4d2d]">Vingo</span>
+        </h2>
+        <p className="mt-3 text-white/80 font-semibold">
+          Loading your experience…
+        </p>
+        <div className="mt-6 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+        </div>
+      </div>
+    </div>
+  );
+
+  if (!authReady) {
+    return <Layout>{splash}</Layout>;
+  }
+
   return (
     <Layout>
-      <Suspense fallback={null}>
+      <Suspense fallback={splash}>
         <Routes>
           <Route
             path="/signup"

@@ -13,7 +13,6 @@ import { useDispatch } from "react-redux";
 import { setUserData } from "../redux/userSlice";
 function SignIn() {
   const primaryColor = "#ff4d2d";
-  const hoverColor = "#e64323";
 
   const bgColor = "#fff9f6";
   const borderColor = "#ddd";
@@ -31,7 +30,7 @@ function SignIn() {
     const trimmedEmail = String(email || "").trim();
     const trimmedPassword = String(password || "");
     if (!trimmedEmail || !trimmedPassword) {
-      setErr("email and password are required.");
+      setErr("Email and password are required.");
       setLoading(false);
       return;
     }
@@ -81,7 +80,7 @@ function SignIn() {
       const googleEmail = result?.user?.email || providerProfile?.email || "";
 
       if (!googleEmail) {
-        setErr("email is required");
+        setErr("Email is required.");
         return;
       }
 
@@ -142,7 +141,7 @@ function SignIn() {
         const origin =
           typeof window !== "undefined" ? window.location.origin : "";
         setErr(
-          `Google Sign-In blocked by Firebase.\n\nOpen Firebase Console for project: ${firebaseProjectInfo.projectId}\nAuth domain in app: ${firebaseProjectInfo.authDomain}\nYour site origin: ${origin}\n\nThen add domain \"localhost\" in Auth > Settings > Authorized domains and enable Google provider.`,
+          `Google Sign-In blocked by Firebase.\n\nOpen Firebase Console for project: ${firebaseProjectInfo.projectId}\nAuth domain in app: ${firebaseProjectInfo.authDomain}\nYour site origin: ${origin}\n\nThen add domain "localhost" in Auth > Settings > Authorized domains and enable Google provider.`,
         );
         return;
       }
@@ -171,9 +170,8 @@ function SignIn() {
         >
           Vingo
         </h1>
-        <p className="text-gray-600 mb-8">
-          {" "}
-          Sign In to your account to get started with delicious food deliveries
+        <p className="text-gray-600 mb-8 leading-relaxed">
+          Welcome back — sign in to continue your next craving.
         </p>
 
         {/* email */}
@@ -188,7 +186,7 @@ function SignIn() {
           <input
             type="email"
             className="w-full border rounded-lg px-3 py-2 focus:outline-none "
-            placeholder="Enter your Email"
+            placeholder="Email address"
             style={{ border: `1px solid ${borderColor}` }}
             onChange={(e) => setEmail(e.target.value)}
             value={email}
@@ -208,7 +206,7 @@ function SignIn() {
             <input
               type={`${showPassword ? "text" : "password"}`}
               className="w-full border rounded-lg px-3 py-2 focus:outline-none pr-10"
-              placeholder="Enter your password"
+              placeholder="Password"
               style={{ border: `1px solid ${borderColor}` }}
               onChange={(e) => setPassword(e.target.value)}
               value={password}
@@ -227,7 +225,7 @@ function SignIn() {
           className="text-right mb-4 cursor-pointer text-[#ff4d2d] font-medium"
           onClick={() => navigate("/forgot-password")}
         >
-          Forgot Password
+          Forgot password?
         </div>
 
         <button
@@ -250,8 +248,7 @@ function SignIn() {
           className="text-center mt-6 cursor-pointer"
           onClick={() => navigate("/signup")}
         >
-          Want to create a new account ?{" "}
-          <span className="text-[#ff4d2d]">Sign Up</span>
+          New to Vingo? <span className="text-[#ff4d2d]">Sign Up</span>
         </p>
       </div>
     </div>
