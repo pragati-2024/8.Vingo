@@ -1,8 +1,8 @@
 import nodemailer from "nodemailer";
 
 const getTransporter = () => {
-  const fromEmail = process.env.EMAIL;
-  const pass = process.env.PASS;
+  const fromEmail = process.env.EMAIL_USER || process.env.EMAIL;
+  const pass = process.env.EMAIL_PASS || process.env.PASS;
 
   if (!fromEmail || !pass) return null;
 
@@ -36,7 +36,7 @@ const sendMail = async ({ to, subject, text, html }) => {
     return;
   }
 
-  const from = process.env.EMAIL;
+  const from = process.env.EMAIL_USER || process.env.EMAIL;
   await transporter.sendMail({ from, to, subject, text, html });
 };
 
