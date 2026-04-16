@@ -24,6 +24,9 @@ function TrackOrderPage() {
   const [retryMessage, setRetryMessage] = useState("");
   const [deliveryOtp, setDeliveryOtp] = useState(null);
   const [otpExpiresAt, setOtpExpiresAt] = useState(null);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+  const [, setOtpTick] = useState(0);
 
   const handleGetOrder = useCallback(async () => {
     try {
@@ -68,9 +71,54 @@ function TrackOrderPage() {
     }
   };
 
+  const handleResendDeliveryOtp = async () => {
+    setResendLoading(true);
+    setResendMessage("");
+    try {
+      const res = await axios.post(
+        `${serverUrl}/api/order/send-otp`,
+        { orderId },
+        { withCredentials: true },
+      );
+      setResendMessage(res?.data?.message || "OTP sent");
+
+      if (res?.data?.expiresAt) {
+        setOtpExpiresAt(new Date(res.data.expiresAt));
+      }
+
+      await handleGetOrder();
+      setTimeout(() => setResendMessage(""), 3000);
+    } catch (error) {
+      const msg = error.response?.data?.message || "Resend failed";
+      setResendMessage(msg);
+
+      const expiresAt = error.response?.data?.expiresAt;
+      if (expiresAt) setOtpExpiresAt(new Date(expiresAt));
+
+      setTimeout(() => setResendMessage(""), 3000);
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   useEffect(() => {
     handleGetOrder();
   }, [handleGetOrder]);
+
+  useEffect(() => {
+    if (
+      !(otpExpiresAt instanceof Date) ||
+      Number.isNaN(otpExpiresAt.getTime())
+    ) {
+      return;
+    }
+
+    const id = setInterval(() => {
+      setOtpTick((t) => t + 1);
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, [otpExpiresAt]);
 
   useEffect(() => {
     if (socket && orderId) {
@@ -234,6 +282,60 @@ function TrackOrderPage() {
                 <p className="mt-2 text-xs font-bold text-gray-500">
                   Share this OTP with your delivery partner.
                 </p>
+              </div>
+            )}
+
+            {String(orderStatus).toLowerCase() === "out of delivery" && (
+              <div className="bg-white rounded-4xl p-6 shadow-xl border border-gray-100">
+                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">
+                  Didn’t get the OTP?
+                </h3>
+                <p className="text-xs font-bold text-gray-500">
+                  If it doesn’t arrive within 5 minutes, resend it (email +
+                  dashboard).
+                </p>
+
+                {(() => {
+                  const expiryMs =
+                    otpExpiresAt instanceof Date &&
+                    !Number.isNaN(otpExpiresAt.getTime())
+                      ? otpExpiresAt.getTime()
+                      : 0;
+
+                  const nowMs = Date.now();
+                  const remainingMs = expiryMs > nowMs ? expiryMs - nowMs : 0;
+                  const remainingSec = Math.ceil(remainingMs / 1000);
+
+                  const canResend = !expiryMs || remainingMs === 0;
+
+                  const mm = String(Math.floor(remainingSec / 60)).padStart(
+                    2,
+                    "0",
+                  );
+                  const ss = String(remainingSec % 60).padStart(2, "0");
+
+                  return (
+                    <div className="mt-4">
+                      <button
+                        onClick={handleResendDeliveryOtp}
+                        disabled={resendLoading || !canResend}
+                        className="w-full bg-gray-900 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all disabled:opacity-60"
+                      >
+                        {resendLoading
+                          ? "Sending..."
+                          : canResend
+                            ? "Resend OTP"
+                            : `Resend in ${mm}:${ss}`}
+                      </button>
+
+                      {resendMessage && (
+                        <p className="mt-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                          {resendMessage}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             )}
 

@@ -398,10 +398,12 @@ function DeliveryBoy() {
       if (res?.data?.devOtp) {
         setOtp(String(res.data.devOtp));
       }
-      setMessage("OTP sent to customer");
+      setMessage(res?.data?.message || "OTP sent to customer");
       setTimeout(() => setMessage(""), 3000);
-    } catch {
-      setMessage("Error sending OTP");
+    } catch (e) {
+      const msg =
+        e?.response?.data?.message || e?.message || "Error sending OTP";
+      setMessage(msg);
       setTimeout(() => setMessage(""), 3000);
     }
   };

@@ -1,6 +1,7 @@
 import Order from "../models/order.model.js";
 import Shop from "../models/shop.model.js";
 import User from "../models/user.model.js";
+import { randomInt } from "crypto";
 import { sendDeliveryOtpMail } from "../utils/mail.js";
 import RazorPay from "razorpay";
 import dotenv from "dotenv";
@@ -167,7 +168,10 @@ export const verifyPayment = async (req, res) => {
       order.razorpayPaymentId = razorpay_payment_id;
       await order.save();
 
-      await order.populate("shopOrders.shopOrderItems.item", "name image price");
+      await order.populate(
+        "shopOrders.shopOrderItems.item",
+        "name image price",
+      );
       await order.populate("shopOrders.shop", "name image city");
       await order.populate("shopOrders.owner", "fullName socketId");
       await order.populate("user", "fullName email mobile");
@@ -656,13 +660,75 @@ export const getOrderById = async (req, res) => {
 export const sendDeliveryOtp = async (req, res) => {
   try {
     const { orderId } = req.body;
-    const order = await Order.findById(orderId).populate("user");
+    if (!orderId) {
+      return res.status(400).json({ message: "orderId is required" });
+    }
+
+    const order = await Order.findById(orderId).populate("user deliveryBoy");
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    const requesterId = req.userId ? String(req.userId) : null;
+    const userId = order.user?._id ? String(order.user._id) : null;
+    const deliveryBoyId = order.deliveryBoy?._id
+      ? String(order.deliveryBoy._id)
+      : order.deliveryBoy
+        ? String(order.deliveryBoy)
+        : null;
+
+    const isOrderUser = Boolean(
+      requesterId && userId && requesterId === userId,
+    );
+    const isOrderDeliveryBoy = Boolean(
+      requesterId && deliveryBoyId && requesterId === deliveryBoyId,
+    );
+    const isShopAssignedDeliveryBoy = Array.isArray(order.shopOrders)
+      ? order.shopOrders.some((so) => {
+          const assigned = so?.assignedDeliveryBoy?._id
+            ? String(so.assignedDeliveryBoy._id)
+            : so?.assignedDeliveryBoy
+              ? String(so.assignedDeliveryBoy)
+              : null;
+          return Boolean(assigned && requesterId && assigned === requesterId);
+        })
+      : false;
+
+    if (!isOrderUser && !isOrderDeliveryBoy && !isShopAssignedDeliveryBoy) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const hasOutForDelivery = Array.isArray(order.shopOrders)
+      ? order.shopOrders.some((so) => so?.status === "out of delivery")
+      : false;
+
+    if (!hasOutForDelivery) {
+      return res.status(400).json({ message: "Order is not out for delivery" });
+    }
+
+    const now = Date.now();
+    const activeOtpShopOrder = Array.isArray(order.shopOrders)
+      ? order.shopOrders.find((so) => {
+          const soOtp = String(so?.deliveryOtp || "");
+          const exp = so?.otpExpires ? new Date(so.otpExpires).getTime() : 0;
+          return Boolean(soOtp) && exp >= now;
+        })
+      : null;
+
+    // Allow resend only after expiry (5 minutes).
+    if (activeOtpShopOrder) {
+      return res.status(429).json({
+        message: "OTP already sent. Please try again after 5 minutes.",
+        expiresAt: activeOtpShopOrder.otpExpires
+          ? new Date(activeOtpShopOrder.otpExpires).toISOString()
+          : null,
+      });
+    }
+
+    const otp = String(randomInt(0, 10_000)).padStart(4, "0");
+    const expiresAtMs = Date.now() + 5 * 60 * 1000;
+
     order.shopOrders.forEach((so) => {
       so.deliveryOtp = otp;
-      so.otpExpires = Date.now() + 5 * 60 * 1000;
+      so.otpExpires = expiresAtMs;
     });
     await order.save();
 
@@ -680,20 +746,20 @@ export const sendDeliveryOtp = async (req, res) => {
       const payload = {
         orderId: String(orderId),
         otp,
-        expiresAt: order.shopOrders?.[0]?.otpExpires
-          ? new Date(order.shopOrders[0].otpExpires).toISOString()
-          : null,
+        expiresAt: new Date(expiresAtMs).toISOString(),
       };
       io.to(String(order.user._id)).emit("deliveryOtp", payload);
       io.to(`order:${String(orderId)}`).emit("deliveryOtp", payload);
     }
 
     const payload = {
-      message: `OTP ${mailSent ? "sent" : "generated"} successfully for ${order.user.fullName}`,
+      message: `OTP ${mailSent ? "sent" : "generated"} successfully`,
+      expiresAt: new Date(expiresAtMs).toISOString(),
     };
     if (process.env.NODE_ENV !== "production") {
       payload.devOtp = otp;
     }
+
     return res.status(200).json(payload);
   } catch (error) {
     return res
@@ -705,16 +771,44 @@ export const sendDeliveryOtp = async (req, res) => {
 export const verifyDeliveryOtp = async (req, res) => {
   try {
     const { orderId, otp } = req.body;
-    const order = await Order.findById(orderId)
-      .populate("user deliveryBoy")
-      .populate("shopOrders.shop", "owner");
 
     const cleanedOtp = String(otp || "")
       .replace(/\D/g, "")
       .slice(0, 4);
 
-    if (!order || cleanedOtp.length !== 4) {
+    if (!orderId || cleanedOtp.length !== 4) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    const order = await Order.findById(orderId)
+      .populate("user deliveryBoy")
+      .populate("shopOrders.shop", "owner");
+
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    const requesterId = req.userId ? String(req.userId) : null;
+    const deliveryBoyId = order.deliveryBoy?._id
+      ? String(order.deliveryBoy._id)
+      : order.deliveryBoy
+        ? String(order.deliveryBoy)
+        : null;
+
+    const isOrderDeliveryBoy = Boolean(
+      requesterId && deliveryBoyId && requesterId === deliveryBoyId,
+    );
+    const isShopAssignedDeliveryBoy = Array.isArray(order.shopOrders)
+      ? order.shopOrders.some((so) => {
+          const assigned = so?.assignedDeliveryBoy?._id
+            ? String(so.assignedDeliveryBoy._id)
+            : so?.assignedDeliveryBoy
+              ? String(so.assignedDeliveryBoy)
+              : null;
+          return Boolean(assigned && requesterId && assigned === requesterId);
+        })
+      : false;
+
+    if (!isOrderDeliveryBoy && !isShopAssignedDeliveryBoy) {
+      return res.status(403).json({ message: "Forbidden" });
     }
 
     const now = Date.now();
@@ -741,13 +835,11 @@ export const verifyDeliveryOtp = async (req, res) => {
     const io = req.app.get("io");
     if (io) {
       const userId = order.user?._id ? String(order.user._id) : null;
-      const deliveryBoyId = order.deliveryBoy?._id
-        ? String(order.deliveryBoy._id)
-        : order.deliveryBoy
-          ? String(order.deliveryBoy)
-          : null;
+      const deliveryBoyRoomId = deliveryBoyId;
 
-      const shopOrders = Array.isArray(order.shopOrders) ? order.shopOrders : [];
+      const shopOrders = Array.isArray(order.shopOrders)
+        ? order.shopOrders
+        : [];
       for (const so of shopOrders) {
         const shopId = so?.shop?._id
           ? String(so.shop._id)
@@ -776,8 +868,8 @@ export const verifyDeliveryOtp = async (req, res) => {
           io.to(ownerId).emit("orderStatusUpdated", payload);
           io.to(ownerId).emit("update-status", payload);
         }
-        if (deliveryBoyId) {
-          io.to(deliveryBoyId).emit("orderStatusUpdated", payload);
+        if (deliveryBoyRoomId) {
+          io.to(deliveryBoyRoomId).emit("orderStatusUpdated", payload);
         }
       }
     }
