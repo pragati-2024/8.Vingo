@@ -1,7 +1,8 @@
 import User from "../models/user.model.js";
+import { randomInt } from "crypto";
 import bcrypt, { hash } from "bcryptjs";
 import genToken from "../utils/token.js";
-import { sendOtpMail } from "../utils/mail.js";
+import { sendEmailVerificationOtpMail, sendOtpMail } from "../utils/mail.js";
 
 const buildAuthCookieOptions = () => {
   const isProd = process.env.NODE_ENV === "production";
@@ -197,6 +198,88 @@ export const verifyOtp = async (req, res) => {
     return res
       .status(500)
       .json({ message: `verify otp error ${error?.message || error}` });
+  }
+};
+
+export const sendEmailVerificationOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "email is required" });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      return res.status(400).json({ message: "User does not exist." });
+    }
+
+    if (user.isVerified) {
+      return res.status(200).json({ message: "email already verified" });
+    }
+
+    const otp = String(randomInt(0, 1_000_000)).padStart(6, "0");
+    user.emailVerificationOtp = otp;
+    user.emailVerificationOtpExpires = Date.now() + 5 * 60 * 1000;
+    await user.save();
+
+    await sendEmailVerificationOtpMail(normalizedEmail, otp);
+
+    const payload = { message: "verification otp sent successfully" };
+    if (process.env.NODE_ENV !== "production") {
+      payload.devOtp = otp;
+    }
+
+    return res.status(200).json(payload);
+  } catch (error) {
+    return res.status(500).json({
+      message: `send email verification otp error ${error?.message || error}`,
+    });
+  }
+};
+
+export const verifyEmailOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: "email and otp are required" });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const cleanedOtp = String(otp).trim();
+
+    if (!/^\d{6}$/.test(cleanedOtp)) {
+      return res.status(400).json({ message: "invalid/expired otp" });
+    }
+
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      return res.status(400).json({ message: "User does not exist." });
+    }
+
+    if (user.isVerified) {
+      return res.status(200).json({ message: "email already verified" });
+    }
+
+    if (
+      !user.emailVerificationOtp ||
+      !user.emailVerificationOtpExpires ||
+      user.emailVerificationOtp != cleanedOtp ||
+      user.emailVerificationOtpExpires < Date.now()
+    ) {
+      return res.status(400).json({ message: "invalid/expired otp" });
+    }
+
+    user.isVerified = true;
+    user.emailVerificationOtp = undefined;
+    user.emailVerificationOtpExpires = undefined;
+    await user.save();
+
+    return res.status(200).json({ message: "email verified successfully" });
+  } catch (error) {
+    return res.status(500).json({
+      message: `verify email otp error ${error?.message || error}`,
+    });
   }
 };
 

@@ -8,7 +8,8 @@ const getTransporter = () => {
 
   const host = process.env.SMTP_HOST || "smtp.gmail.com";
   const port = Number(process.env.SMTP_PORT) || 587;
-  const secure = String(process.env.SMTP_SECURE || "false").toLowerCase() === "true";
+  const secure =
+    String(process.env.SMTP_SECURE || "false").toLowerCase() === "true";
 
   return nodemailer.createTransport({
     host,
@@ -49,6 +50,19 @@ export const sendOtpMail = async (email, otp) => {
   } catch (e) {
     console.error("Failed to send OTP email:", e);
     throw new Error("Failed to send OTP email");
+  }
+};
+
+export const sendEmailVerificationOtpMail = async (email, otp) => {
+  const subject = "Verify your Vingo email";
+  const text = `Your email verification OTP is: ${otp}. It will expire in 5 minutes.`;
+  const html = `<p>Your email verification OTP is: <b>${otp}</b></p><p>It will expire in 5 minutes.</p>`;
+
+  try {
+    await sendMail({ to: email, subject, text, html });
+  } catch (e) {
+    console.error("Failed to send email verification OTP:", e);
+    throw new Error("Failed to send email verification OTP");
   }
 };
 

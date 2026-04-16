@@ -123,10 +123,7 @@ function DeliveryBoy() {
 
     const uniqueNames = Array.from(new Set(names));
     if (uniqueNames.length === 0) {
-      const shortId = String(order?._id || "")
-        .slice(-6)
-        .toUpperCase();
-      return shortId ? `ORDER #${shortId}` : "ORDER";
+      return "ORDER";
     }
 
     if (uniqueNames.length === 1) return uniqueNames[0];
@@ -569,12 +566,32 @@ function DeliveryBoy() {
                           setShowCompleted(false);
                         }}
                       >
-                        {assignedOrders.map((o) => (
-                          <option key={o._id} value={o._id}>
-                            #{String(o._id).slice(-6)} —{" "}
-                            {o.user?.fullName || "Customer"}
-                          </option>
-                        ))}
+                        {assignedOrders.map((o, idx) => {
+                          const status =
+                            o?.shopOrders?.find((so) => {
+                              const assigned =
+                                so?.assignedDeliveryBoy?._id?.toString?.() ||
+                                so?.assignedDeliveryBoy?.toString?.();
+                              return assigned === userData?._id?.toString?.();
+                            })?.status || o?.shopOrders?.[0]?.status;
+
+                          const statusLabel =
+                            status === "out of delivery"
+                              ? "Out for Delivery"
+                              : status === "accepted"
+                                ? "Accepted"
+                                : status === "delivered"
+                                  ? "Delivered"
+                                  : String(status || "In progress");
+
+                          const missionLabel = `Mission ${idx + 1}`;
+
+                          return (
+                            <option key={o._id} value={o._id}>
+                              {missionLabel} • {statusLabel}
+                            </option>
+                          );
+                        })}
                       </select>
                     )}
                   <div className="bg-[#ff4d2d]/10 text-[#ff4d2d] px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest">
@@ -591,7 +608,7 @@ function DeliveryBoy() {
                       Mission queue
                     </p>
                     <div className="flex gap-2 overflow-x-auto pb-2">
-                      {assignedOrders.map((o) => {
+                      {assignedOrders.map((o, idx) => {
                         const isActive =
                           String(o?._id) === String(currentOrder?._id);
                         const status =
@@ -617,15 +634,22 @@ function DeliveryBoy() {
                                 ? "bg-gray-900 text-white border-gray-900"
                                 : "bg-white text-gray-700 border-gray-200 hover:border-[#ff4d2d]/50"
                             }`}
-                            title={o.user?.fullName || "Customer"}
+                            title={`Mission ${idx + 1}`}
                           >
-                            #{String(o._id).slice(-6)}{" "}
+                            Mission {idx + 1}{" "}
                             <span
                               className={
                                 isActive ? "text-white/70" : "text-gray-400"
                               }
                             >
-                              • {String(status || "in progress")}
+                              •{" "}
+                              {status === "out of delivery"
+                                ? "Out for Delivery"
+                                : status === "accepted"
+                                  ? "Accepted"
+                                  : status === "delivered"
+                                    ? "Delivered"
+                                    : String(status || "In progress")}
                             </span>
                           </button>
                         );
@@ -816,10 +840,42 @@ function DeliveryBoy() {
                                         Mission
                                       </p>
                                       <p className="font-black text-gray-900 truncate">
-                                        #{String(o._id).slice(-6)}
+                                        {(() => {
+                                          const missionIndex =
+                                            assignedOrders.findIndex(
+                                              (x) =>
+                                                String(x?._id) ===
+                                                String(o?._id),
+                                            );
+                                          return missionIndex >= 0
+                                            ? `Mission ${missionIndex + 1}`
+                                            : "Mission";
+                                        })()}
                                       </p>
                                       <p className="text-sm text-gray-500 font-semibold truncate">
-                                        {o.user?.fullName || "Customer"}
+                                        {(() => {
+                                          const status =
+                                            o?.shopOrders?.find((so) => {
+                                              const assigned =
+                                                so?.assignedDeliveryBoy?._id?.toString?.() ||
+                                                so?.assignedDeliveryBoy?.toString?.();
+                                              return (
+                                                assigned ===
+                                                userData?._id?.toString?.()
+                                              );
+                                            })?.status ||
+                                            o?.shopOrders?.[0]?.status;
+
+                                          return status === "out of delivery"
+                                            ? "Out for Delivery"
+                                            : status === "accepted"
+                                              ? "Accepted"
+                                              : status === "delivered"
+                                                ? "Delivered"
+                                                : String(
+                                                    status || "In progress",
+                                                  );
+                                        })()}
                                       </p>
                                     </div>
                                     <div className="shrink-0 text-right">
