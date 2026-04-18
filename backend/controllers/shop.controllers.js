@@ -115,30 +115,66 @@ export const getShopByCity = async (req, res) => {
         .trim();
     };
 
+    const scoreImage = (image) => {
+      if (!image || typeof image !== "string") return 0;
+      const v = image.trim().toLowerCase();
+      if (!v) return 0;
+      // Worst: known placeholders / SVG data URIs
+      if (v.startsWith("data:image/svg")) return 1;
+      if (v.includes("/public/placeholder-")) return 1;
+      if (v.includes("/public/placeholder-image")) return 1;
+      // Local uploads (good in dev, may be fragile in some deployments)
+      if (v.startsWith("/public/")) return 2;
+      // Remote URLs are typically the most stable
+      if (v.startsWith("http://") || v.startsWith("https://")) return 3;
+      return 2;
+    };
+
     const bestByKey = new Map();
     for (const shop of all) {
       const nameKey = normalize(shop?.name);
       const addrKey = normalize(shop?.address);
-      const key = nameKey && addrKey ? `${nameKey}::${addrKey}` : String(shop?._id);
+      const key =
+        nameKey && addrKey ? `${nameKey}::${addrKey}` : String(shop?._id);
 
       const existing = bestByKey.get(key);
       const itemCount = Array.isArray(shop?.items) ? shop.items.length : 0;
-      const existingCount = Array.isArray(existing?.items) ? existing.items.length : 0;
+      const existingCount = Array.isArray(existing?.items)
+        ? existing.items.length
+        : 0;
       if (!existing) {
         bestByKey.set(key, shop);
         continue;
       }
 
-      if (itemCount > existingCount) {
-        bestByKey.set(key, shop);
+      // Prefer a shop that actually has items, otherwise it will be hidden later.
+      const hasItems = itemCount > 0;
+      const existingHasItems = existingCount > 0;
+      if (hasItems !== existingHasItems) {
+        if (hasItems) bestByKey.set(key, shop);
         continue;
       }
 
-      if (itemCount === existingCount) {
-        const a = shop?.updatedAt ? new Date(shop.updatedAt).getTime() : 0;
-        const b = existing?.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
-        if (a > b) bestByKey.set(key, shop);
+      // If both have items (or both don't), prefer better images.
+      const imgScore = scoreImage(shop?.image);
+      const existingImgScore = scoreImage(existing?.image);
+      if (imgScore !== existingImgScore) {
+        if (imgScore > existingImgScore) bestByKey.set(key, shop);
+        continue;
       }
+
+      // Next, prefer the shop with more items.
+      if (itemCount !== existingCount) {
+        if (itemCount > existingCount) bestByKey.set(key, shop);
+        continue;
+      }
+
+      // Finally, keep the most recently updated.
+      const a = shop?.updatedAt ? new Date(shop.updatedAt).getTime() : 0;
+      const b = existing?.updatedAt
+        ? new Date(existing.updatedAt).getTime()
+        : 0;
+      if (a > b) bestByKey.set(key, shop);
     }
 
     // Hide empty shops from user listings (common for test/duplicate records).

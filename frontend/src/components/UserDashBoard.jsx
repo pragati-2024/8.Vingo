@@ -380,7 +380,7 @@ function UserDashboard() {
                 shopInMyCity.map((shop, index) => (
                   <motion.div
                     whileHover={{ y: -6, scale: 1.01 }}
-                    key={index}
+                    key={shop?._id || index}
                     onClick={() => navigate(`/shop/${shop._id}`)}
                     className="w-[320px] md:w-87.5 shrink-0 bg-white rounded-2xl overflow-hidden shadow-[0_6px_20px_rgba(0,0,0,0.06)] border border-gray-100 cursor-pointer group transition-all duration-300"
                   >
